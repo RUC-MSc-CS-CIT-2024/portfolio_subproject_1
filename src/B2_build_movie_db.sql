@@ -1,3 +1,32 @@
+DROP TABLE IF EXISTS country CASCADE;
+DROP TABLE IF EXISTS "language" CASCADE;
+DROP TABLE IF EXISTS job_category CASCADE;
+DROP TABLE IF EXISTS media CASCADE;
+DROP TABLE IF EXISTS movie CASCADE;
+DROP TABLE IF EXISTS series CASCADE;
+DROP TABLE IF EXISTS season CASCADE;
+DROP TABLE IF EXISTS episode CASCADE;
+DROP TABLE IF EXISTS media_genre CASCADE;
+DROP TABLE IF EXISTS media_production_country CASCADE;
+DROP TABLE IF EXISTS score CASCADE;
+DROP TABLE IF EXISTS "collection" CASCADE;
+DROP TABLE IF EXISTS media_in_collection CASCADE;
+DROP TABLE IF EXISTS related_media CASCADE;
+DROP TABLE IF EXISTS release CASCADE;
+DROP TABLE IF EXISTS spoken_language CASCADE;
+DROP TABLE IF EXISTS promotional_media CASCADE;
+DROP TABLE IF EXISTS person CASCADE;
+DROP TABLE IF EXISTS crew_member CASCADE;
+DROP TABLE IF EXISTS cast_member CASCADE;
+DROP TABLE IF EXISTS production_company CASCADE;
+DROP TABLE IF EXISTS media_production_company CASCADE;
+DROP TABLE IF EXISTS "user" CASCADE;
+DROP TABLE IF EXISTS search_history CASCADE;
+DROP TABLE IF EXISTS bookmarks CASCADE;
+DROP TABLE IF EXISTS completed CASCADE;
+DROP TABLE IF EXISTS plan_to_watch CASCADE;
+DROP TABLE IF EXISTS user_score CASCADE;
+
 CREATE TABLE country (
     code    VARCHAR(2)  PRIMARY KEY,
     "name"  VARCHAR(50) NOT NULL
@@ -15,6 +44,7 @@ CREATE TABLE job_category (
 
 CREATE TYPE media (
     id          INTEGER         PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "type"      VARCHAR(50)     NOT NULL,
     plot        TEXT            NULL,
     runtime     INTEGER         NULL,
     box_office  INTEGER         NULL,
@@ -24,21 +54,19 @@ CREATE TYPE media (
     awards      VARCHAR(255)    NULL,
 );
 
-CREATE TABLE movie INHERITS (media);
-
-CREATE TABLE series INHERITS (media);
-
 CREATE TABLE season (
-    status          VARCHAR(50) NOT NULL,
+    "status"          VARCHAR(50) NOT NULL,
     season_number   INTEGER     NOT NULL,
     end_date        DATE        NULL,
     series_id       INTEGER     NOT NULL REFERENCES series(id),
-) INHERITS (media);
+    media_id        INTEGER     NOT NULL REFERENCES media(id)
+);
 
 CREATE TABLE episode (
     episode_number  INTEGER NOT NULL,
     season_id       INTEGER NOT NULL REFERENCES season(id),
-) INHERITS (media);
+    media_id        INTEGER     NOT NULL REFERENCES media(id)
+);
 
 CREATE TABLE media_genre (
     "name"      VARCHAR(50) NOT NULL,
@@ -53,12 +81,11 @@ CREATE TABLE media_production_country (
 );
 
 CREATE TABLE score (
-    id              INTEGER PRIMARY KEY,
-    metacritic      INTEGER NULL,
-    rotten_tomatoes INTEGER NULL,
-    imdb            DECIMAL NULL,
-    user_score      DECIMAL NULL
-    FOREIGN KEY (media_id) REFERENCES media(id)
+    id              INTEGER     PRIMARY KEY,
+    source          INTEGER     NOT NULL,
+    "value"           VARCHAR(20) NOT NULL,
+    "at"            TIMESTAMP   NOT NULL,
+    FOREIGN KEY (id) REFERENCES media(id)
 );
 
 CREATE TABLE "collection" (

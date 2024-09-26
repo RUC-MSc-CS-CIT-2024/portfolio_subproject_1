@@ -85,17 +85,14 @@ Portfolio Subproject made for the CIT 2024 course
 ### Score
 *An overview of the scores for a specific media.*
 
-- Metacritic Score
+- Source 
+	- *The source of the score value, e.g. Metacritic, IMDB, Rotten Tomatoes, etc.*
+
+- Value 
 	- *The average score from this source.*
 
-- IMDB Score
-	- *The average score from this source.*
-
-- Rotten Tomatoes Score
-	- *The average score from this source.*
-
-- Average User Score
-	- *The average score of all the users in the system.*
+- At
+	- *The time of when the score was collected.*
 
 ### Crew Member
 *The person working on a media.*
