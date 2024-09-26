@@ -171,7 +171,7 @@ Portfolio Subproject made for the CIT 2024 course
 - Empty
 
 ### Promotional Media
-*Multimedia used to promote the media.*
+*Multimedia used to promote a media release.*
 
 - URI
 	- *The digital location of where the media is stored.*
