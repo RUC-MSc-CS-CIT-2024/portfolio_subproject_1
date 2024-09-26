@@ -1,6 +1,17 @@
 # portfolio_subproject_1  
 Portfolio Subproject made for the CIT 2024 course
 
+
+## Entity Relationship diagram
+
+### Core Data Model
+
+![ER diagram for core data model](ER_diagram_core_data.svg)
+
+## Domain Model
+
+![Domain Model](domain_model.drawio.png)
+
 ## Term Glossary
 
 ### Country
