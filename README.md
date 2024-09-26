@@ -19,6 +19,11 @@ Portfolio Subproject made for the CIT 2024 course
 - **Name**
 	- *Name of the language*
 
+### Job Category
+*The profession of a person work on a media.*
+
+- **Name**
+	- *unique name of*
 
 ### Media
 *Media represents movies, series, episodes—basically any type of media content that can be consumed by a user of the site.*
@@ -93,25 +98,22 @@ Portfolio Subproject made for the CIT 2024 course
 	- *The average score of all the users in the system.*
 
 ### Crew Member
-*The people working on a media.*
+*The person working on a media.*
 
-- Job
-	- *The job title.*
+- Role
+	- *The title of the job/role which the person performed on the movie. E.g. crew member was an actor but their role was the 'Lead' of the movie*
 
-- Category
-	- *The profession of the people working on the media.*
+#### Cast Member
+*An actor on performing in a media.*
 
 - Character
-	- *The name of the role the actor played.*
+	- *The name of the character the actor played.*
 
 ### Person
 *A person that has been involved with the making of a type of media.*
 
-- First Name
-	- *The first name of the person.*
-
-- Last Name
-	- *The last name of the person.*
+- Name
+	- *Full name of the person. Consists of '{First names} {middle names} {last name}'*
 
 - Birth Date
 	- *The date of birth.*
@@ -180,10 +182,13 @@ Portfolio Subproject made for the CIT 2024 course
 	- *The type of multimedia, e.g., poster, video, image.*
 
 ### Production Company
-*The company that has been involved in making the media.*
+*The company that has been involved in making a type of media.*
 
 - Name
 	- *The name of the company.*
+
+- Description
+	- *Short text about the company.*
 
 - Type
 	- *The type of company, e.g., studio, production.*

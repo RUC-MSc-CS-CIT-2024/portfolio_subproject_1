@@ -8,10 +8,9 @@ CREATE TABLE "language" (
     "name"  VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE media_genre (
-    "name"      VARCHAR(50) NOT NULL,
-    media_id    INTEGER     NOT NULL REFERENCES media(id),
-    PRIMARY KEY (media_id, "name")
+CREATE TABLE job_category (
+    id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"  VARCHAR(50) NOT NULL UNIQUE
 );
 
 CREATE TYPE media (
@@ -40,6 +39,12 @@ CREATE TABLE episode (
     episode_number  INTEGER NOT NULL,
     season_id       INTEGER NOT NULL REFERENCES season(id),
 ) INHERITS (media);
+
+CREATE TABLE media_genre (
+    "name"      VARCHAR(50) NOT NULL,
+    media_id    INTEGER     NOT NULL REFERENCES media(id),
+    PRIMARY KEY (media_id, "name")
+);
 
 CREATE TABLE media_production_country (
     id              INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -108,12 +113,15 @@ CREATE TABLE person (
 
 CREATE TABLE crew_member (
     id              INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "role"          VARCHAR(50) NULL,
     person_id       INTEGER     NOT NULL REFERENCES person(id),
     media_id        INTEGER     NOT NULL REFERENCES media(id),
-    "character"     VARCHAR(50) NULL,
-    job             VARCHAR(50) NULL,
-    job_category    VARCHAR(50) NOT NULL
+    job_category_id INTEGER     NOT NULL REFERENCES job_category(id)
 );
+
+CREATE TABLE cast_member (
+    "character" VARCHAR(50) NOT NULL
+) INHERITS (crew_member);
 
 CREATE TABLE production_company (
     id              INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
