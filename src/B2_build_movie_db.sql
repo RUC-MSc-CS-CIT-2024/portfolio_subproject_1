@@ -1,31 +1,25 @@
-DROP TABLE IF EXISTS country CASCADE;
-DROP TABLE IF EXISTS "language" CASCADE;
-DROP TABLE IF EXISTS job_category CASCADE;
-DROP TABLE IF EXISTS media CASCADE;
-DROP TABLE IF EXISTS movie CASCADE;
-DROP TABLE IF EXISTS series CASCADE;
-DROP TABLE IF EXISTS season CASCADE;
-DROP TABLE IF EXISTS episode CASCADE;
-DROP TABLE IF EXISTS media_genre CASCADE;
-DROP TABLE IF EXISTS media_production_country CASCADE;
-DROP TABLE IF EXISTS score CASCADE;
-DROP TABLE IF EXISTS "collection" CASCADE;
-DROP TABLE IF EXISTS media_in_collection CASCADE;
-DROP TABLE IF EXISTS related_media CASCADE;
-DROP TABLE IF EXISTS release CASCADE;
-DROP TABLE IF EXISTS spoken_language CASCADE;
-DROP TABLE IF EXISTS promotional_media CASCADE;
-DROP TABLE IF EXISTS person CASCADE;
-DROP TABLE IF EXISTS crew_member CASCADE;
-DROP TABLE IF EXISTS cast_member CASCADE;
-DROP TABLE IF EXISTS production_company CASCADE;
-DROP TABLE IF EXISTS media_production_company CASCADE;
-DROP TABLE IF EXISTS "user" CASCADE;
-DROP TABLE IF EXISTS search_history CASCADE;
-DROP TABLE IF EXISTS bookmarks CASCADE;
-DROP TABLE IF EXISTS completed CASCADE;
-DROP TABLE IF EXISTS plan_to_watch CASCADE;
-DROP TABLE IF EXISTS user_score CASCADE;
+DROP TABLE IF EXISTS media_genre;
+DROP TABLE IF EXISTS score;
+DROP TABLE IF EXISTS spoken_language;
+DROP TABLE IF EXISTS crew_member;
+DROP TABLE IF EXISTS cast_member;
+DROP TABLE IF EXISTS promotional_media;
+DROP TABLE IF EXISTS release;
+DROP TABLE IF EXISTS media_in_collection;
+DROP TABLE IF EXISTS media_production_country;
+DROP TABLE IF EXISTS media_production_company;
+DROP TABLE IF EXISTS related_media;
+DROP TABLE IF EXISTS media;
+DROP TABLE IF EXISTS movie;
+DROP TABLE IF EXISTS series;
+DROP TABLE IF EXISTS season;
+DROP TABLE IF EXISTS episode;
+DROP TABLE IF EXISTS person;
+DROP TABLE IF EXISTS production_company;
+DROP TABLE IF EXISTS country;
+DROP TABLE IF EXISTS "language";
+DROP TABLE IF EXISTS job_category;
+DROP TABLE IF EXISTS "collection";
 
 CREATE TABLE country (
     code    VARCHAR(2)  PRIMARY KEY,
@@ -83,8 +77,8 @@ CREATE TABLE media_production_country (
 CREATE TABLE score (
     id              INTEGER     PRIMARY KEY,
     source          INTEGER     NOT NULL,
-    "value"           VARCHAR(20) NOT NULL,
-    "at"            TIMESTAMP   NOT NULL,
+    "value"         VARCHAR(20) NOT NULL,
+    "at"            TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id) REFERENCES media(id)
 );
 
@@ -112,7 +106,7 @@ CREATE TABLE release (
     title           VARCHAR(50) NOT NULL,
     release_date    DATE        NULL,
     country_code    VARCHAR(2)  NOT NULL REFERENCES country(code), -- Region
-    media_id        INTEGER     NOT NULL REFERENCES media(id)
+    media_id        INTEGER     NOT NULL REFERENCES media(id) 
 );
 
 CREATE TABLE spoken_language (
