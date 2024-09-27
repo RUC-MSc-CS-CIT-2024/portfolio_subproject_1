@@ -28,14 +28,10 @@ CREATE TABLE bookmark (
 
 CREATE TABLE completed (
     completed_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    bookmark_id INTEGER REFERENCES bookmarks(bookmark_id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES "user"(user_id) ON DELETE CASCADE,
+    media_id INTEGER REFERENCES media(id) ON DELETE CASCADE,
     completed_date DATE NOT NULL,
     rewatchability INTEGER CHECK (rewatchability >= 1 AND rewatchability <= 5)
-);
-
-CREATE TABLE plan_to_watch (
-    plan_to_watch_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    bookmark_id INTEGER REFERENCES bookmarks(bookmark_id) ON DELETE CASCADE
 );
 
 CREATE TABLE user_score (
