@@ -1,7 +1,40 @@
 # portfolio_subproject_1  
 Portfolio Subproject made for the CIT 2024 course
 
+
+## Entity Relationship diagram
+
+### Core Data Model
+
+![ER diagram for core data model](ER_diagram_core_data.svg)
+
+## Domain Model
+
+![Domain Model](domain_model.drawio.png)
+
 ## Term Glossary
+
+### Country
+
+- **Code**
+	- *A unique code for each country based on [ISO 3166-1 A-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) standard*
+
+- **Name**
+	- *Name of the country*
+
+### Language
+
+- **Code**
+	- *A unique code for each language based on [ISO 639-1](https://en.wikipedia.org/wiki/ISO_639-1) standard*
+
+- **Name**
+	- *Name of the language*
+
+### Job Category
+*The profession of a person work on a media.*
+
+- **Name**
+	- *unique name of*
 
 ### Media
 *Media represents movies, series, episodes—basically any type of media content that can be consumed by a user of the site.*
@@ -63,38 +96,32 @@ Portfolio Subproject made for the CIT 2024 course
 ### Score
 *An overview of the scores for a specific media.*
 
-- Metacritic Score
+- Source 
+	- *The source of the score value, e.g. Metacritic, IMDB, Rotten Tomatoes, etc.*
+
+- Value 
 	- *The average score from this source.*
 
-- IMDB Score
-	- *The average score from this source.*
-
-- Rotten Tomatoes Score
-	- *The average score from this source.*
-
-- Average User Score
-	- *The average score of all the users in the system.*
+- At
+	- *The time of when the score was collected.*
 
 ### Crew Member
-*The people working on a media.*
+*The person working on a media.*
 
-- Job
-	- *The job title.*
+- Role
+	- *The title of the job/role which the person performed on the movie. E.g. crew member was an actor but their role was the 'Lead' of the movie*
 
-- Category
-	- *The profession of the people working on the media.*
+#### Cast Member
+*An actor on performing in a media.*
 
 - Character
-	- *The name of the role the actor played.*
+	- *The name of the character the actor played.*
 
 ### Person
 *A person that has been involved with the making of a type of media.*
 
-- First Name
-	- *The first name of the person.*
-
-- Last Name
-	- *The last name of the person.*
+- Name
+	- *Full name of the person. Consists of '{First names} {middle names} {last name}'*
 
 - Birth Date
 	- *The date of birth.*
@@ -154,7 +181,7 @@ Portfolio Subproject made for the CIT 2024 course
 - Empty
 
 ### Promotional Media
-*Multimedia used to promote the media.*
+*Multimedia used to promote a media release.*
 
 - URI
 	- *The digital location of where the media is stored.*
@@ -163,10 +190,13 @@ Portfolio Subproject made for the CIT 2024 course
 	- *The type of multimedia, e.g., poster, video, image.*
 
 ### Production Company
-*The company that has been involved in making the media.*
+*The company that has been involved in making a type of media.*
 
 - Name
 	- *The name of the company.*
+
+- Description
+	- *Short text about the company.*
 
 - Type
 	- *The type of company, e.g., studio, production.*
