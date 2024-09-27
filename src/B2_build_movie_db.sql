@@ -22,12 +22,12 @@ DROP TABLE IF EXISTS job_category;
 DROP TABLE IF EXISTS "collection";
 
 CREATE TABLE country (
-    code    VARCHAR(2)  PRIMARY KEY,
+    code    VARCHAR(4)  PRIMARY KEY,
     "name"  VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE "language" (
-    code    VARCHAR(2)  PRIMARY KEY,
+    code    VARCHAR(4)  PRIMARY KEY,
     "name"  VARCHAR(50) NOT NULL
 );
 
@@ -107,14 +107,14 @@ CREATE TABLE release (
     release_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title           VARCHAR(50) NOT NULL,
     release_date    DATE        NULL,
-    country_code    VARCHAR(2)  NOT NULL REFERENCES country(code), -- Region
+    country_code    VARCHAR(4)  NOT NULL REFERENCES country(code), -- Region
     media_id        INTEGER     NOT NULL REFERENCES media(media_id) 
 );
 
 CREATE TABLE spoken_language (
     spoken_language_id  INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     release_id          INTEGER     NOT NULL REFERENCES release(release_id),
-    language_code       VARCHAR(2)  NOT NULL REFERENCES "language"(code)
+    language_code       VARCHAR(4)  NOT NULL REFERENCES "language"(code)
 );
 
 CREATE TABLE promotional_media (
