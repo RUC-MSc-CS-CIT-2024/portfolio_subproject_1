@@ -15,29 +15,30 @@ CREATE TABLE "user" (
 CREATE TABLE search_history (
     search_history_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id INTEGER REFERENCES "user"(user_id) ON DELETE CASCADE,
-    type VARCHAR(50),
-    query TEXT
+    type VARCHAR(50) NOT NULL,
+    query TEXT NOT NULL
 );
 
 CREATE TABLE bookmark (
     bookmark_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id INTEGER REFERENCES "user"(user_id) ON DELETE CASCADE,
-    media_id INTEGER REFERENCES media(id) ON DELETE CASCADE,
-    note TEXT
+    media_id INTEGER,
+    note TEXT NULL
 );
 
 CREATE TABLE completed (
     completed_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id INTEGER REFERENCES "user"(user_id) ON DELETE CASCADE,
-    media_id INTEGER REFERENCES media(id) ON DELETE CASCADE,
-    completed_date DATE NOT NULL,
-    rewatchability INTEGER CHECK (rewatchability >= 1 AND rewatchability <= 5)
+    media_id INTEGER,
+    completed_date DATE NULL,
+    rewatchability INTEGER CHECK (rewatchability >= 1 AND rewatchability <= 5),
+    note TEXT NULL
 );
 
 CREATE TABLE user_score (
     user_score_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id INTEGER REFERENCES "user"(user_id) ON DELETE CASCADE,
-    media_id INTEGER REFERENCES media(id) ON DELETE CASCADE,
+    media_id INTEGER,
     score_value INTEGER CHECK (score_value >= 1 AND score_value <= 10),
     review_text TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
