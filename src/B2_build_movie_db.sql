@@ -32,12 +32,12 @@ CREATE TABLE "language" (
 );
 
 CREATE TABLE job_category (
-    job_category_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    job_category_id     INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     "name"  VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE media (
-    media_id          INTEGER         PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    media_id    INTEGER         PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     "type"      VARCHAR(50)     NOT NULL,
     plot        TEXT            NULL,
     runtime     INTEGER         NULL,
@@ -59,7 +59,7 @@ CREATE TABLE season (
 
 CREATE TABLE episode (
     media_id        INTEGER PRIMARY KEY,
-    episode_number  INTEGER NOT NULL,
+    episode_number  INTEGER NULL,
     season_id       INTEGER NOT NULL REFERENCES media(media_id),
     FOREIGN KEY (media_id) REFERENCES media(media_id)
 );
@@ -105,9 +105,9 @@ CREATE TABLE related_media (
 
 CREATE TABLE release (
     release_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    title           VARCHAR(50) NOT NULL,
+    title           TEXT        NOT NULL,
     release_date    DATE        NULL,
-    country_code    VARCHAR(4)  NOT NULL REFERENCES country(code), -- Region
+    country_code    VARCHAR(4)  NULL REFERENCES country(code), -- Region
     media_id        INTEGER     NOT NULL REFERENCES media(media_id) 
 );
 
