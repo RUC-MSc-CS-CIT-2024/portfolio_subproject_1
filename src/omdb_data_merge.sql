@@ -1,6 +1,5 @@
 -- UPDATING MEDIA TABLE WITH DATA FROM OMDB
 
-DO $$
 UPDATE media
 SET plot = (CASE
 	    WHEN o.plot = 'N/A' THEN NULL
@@ -21,4 +20,3 @@ SET plot = (CASE
         ELSE o.poster END)
 FROM original.omdb_data AS o
 WHERE media.imdb_id = o.tconst;
-$$;
