@@ -323,13 +323,24 @@ FROM split_genres;
 -- Insert release for media
 WITH
     titleaka_with_id AS (
-        SELECT ta.title, t.startyear, m.media_id, region
+        SELECT ta.title, t.startyear, m.media_id, ta.region, ta.types
         FROM original.title_akas AS ta
         JOIN media AS m ON m.imdb_id = ta.titleid
         JOIN original.title_basics AS t ON t.tconst = ta.titleid
     )
-INSERT INTO "release" (title, release_date, media_id, country_code)
-SELECT title, TO_DATE(startyear, 'YYYY'), media_id, NULLIF(region, '') 
+INSERT INTO "release" (title, release_date, media_id, country_id, "type")
+SELECT 
+    title, 
+    TO_DATE(startyear, 'YYYY'), 
+    media_id,
+    (CASE
+	    WHEN region = '' THEN NULL
+        ELSE (SELECT country_id FROM country WHERE imdb_country_code = region) 
+    END),
+    (CASE
+	    WHEN region = '' THEN NULL
+        ELSE SPLIT_PART(types, U&'0002', 1)
+    END)
 FROM titleaka_with_id;
 
 -- Seasons
@@ -379,3 +390,13 @@ FROM original.title_episode AS e
 JOIN media AS m ON m.imdb_id = e.tconst
 JOIN media AS ps ON e.parenttconst = ps.imdb_id
 JOIN season AS s ON s.season_number = e.seasonnumber AND s.series_id = ps.media_id;
+
+WITH
+    title_with_rating AS (
+        SELECT r.averagerating::TEXT, r.numvotes, m.media_id
+        FROM media AS m
+        JOIN original.title_ratings AS r ON r.tconst = m.imdb_id
+    )
+INSERT INTO score (source, "value", media_id, vote_count)
+SELECT 'IMDb', averagerating, media_id, numvotes
+FROM title_with_rating;
