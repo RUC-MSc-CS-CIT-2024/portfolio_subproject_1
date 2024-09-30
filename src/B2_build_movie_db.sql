@@ -51,7 +51,7 @@ CREATE TABLE media (
 CREATE TABLE season (
     media_id        INTEGER     PRIMARY KEY,
     "status"        VARCHAR(50) NOT NULL,
-    season_number   INTEGER     NOT NULL,
+    season_number   INTEGER     NULL,
     end_date        DATE        NULL,
     series_id       INTEGER     NOT NULL REFERENCES media(media_id),
     FOREIGN KEY (media_id) REFERENCES media(media_id)
