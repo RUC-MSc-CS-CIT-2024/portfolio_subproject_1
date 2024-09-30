@@ -45,28 +45,26 @@ BEGIN
 END $$;
 
 -- remove all data to allow for multiple executions
-TRUNCATE TABLE media_genre;
-TRUNCATE TABLE score;
-TRUNCATE TABLE spoken_language;
-TRUNCATE TABLE crew_member;
-TRUNCATE TABLE cast_member;
-TRUNCATE TABLE promotional_media;
-TRUNCATE TABLE release;
-TRUNCATE TABLE media_in_collection;
-TRUNCATE TABLE media_production_country;
-TRUNCATE TABLE media_production_company;
-TRUNCATE TABLE related_media;
-TRUNCATE TABLE movie;
-TRUNCATE TABLE series;
-TRUNCATE TABLE season;
-TRUNCATE TABLE episode;
-TRUNCATE TABLE media;
-TRUNCATE TABLE person;
-TRUNCATE TABLE production_company;
-TRUNCATE TABLE country;
-TRUNCATE TABLE "language";
-TRUNCATE TABLE job_category;
-TRUNCATE TABLE "collection";
+TRUNCATE TABLE media_genre CASCADE;
+TRUNCATE TABLE score CASCADE;
+TRUNCATE TABLE spoken_language CASCADE;
+TRUNCATE TABLE crew_member CASCADE;
+TRUNCATE TABLE cast_member CASCADE;
+TRUNCATE TABLE promotional_media CASCADE;
+TRUNCATE TABLE release CASCADE;
+TRUNCATE TABLE media_in_collection CASCADE;
+TRUNCATE TABLE media_production_country CASCADE;
+TRUNCATE TABLE media_production_company CASCADE;
+TRUNCATE TABLE related_media CASCADE;
+TRUNCATE TABLE season CASCADE;
+TRUNCATE TABLE episode CASCADE;
+TRUNCATE TABLE media CASCADE;
+TRUNCATE TABLE person CASCADE;
+TRUNCATE TABLE production_company CASCADE;
+TRUNCATE TABLE country CASCADE;
+TRUNCATE TABLE "language" CASCADE;
+TRUNCATE TABLE job_category CASCADE;
+TRUNCATE TABLE "collection" CASCADE;
 
 -- Countries
 
@@ -373,6 +371,7 @@ DO $$
 DECLARE
     new_season_id INTEGER;
     current_season RECORD;
+    insert_count INTEGER := 0; -- Initialize the counter
 BEGIN
     -- Insert seasons for media
     FOR current_season IN
@@ -392,10 +391,16 @@ BEGIN
         INSERT INTO media ("type")
         VALUES ('tvSeason')
         RETURNING media_id INTO new_season_id; 
+
+        -- Increment the counter
+        insert_count := insert_count + 1;
         
         -- Insert season data for new media record
         INSERT INTO season (media_id, "status", season_number, series_id)
         VALUES (new_season_id, 'unknown', current_season.season_number, current_season.media_id);
+
+        -- Increment the counter
+        insert_count := insert_count + 1;
 
         -- Create title for season ('{series_title} - Season {season_number}')
         INSERT INTO "release" (title, release_date, media_id)
@@ -403,7 +408,13 @@ BEGIN
             FORMAT('%s - Season %s', current_season.show_title, current_season.season_number), 
             current_season.start_date, 
             new_season_id);
+
+        -- Increment the counter
+        insert_count := insert_count + 1;
     END LOOP;
+
+    -- Output the number of inserts
+    RAISE NOTICE 'INSERT 0 %', insert_count;
 END $$;
 
 -- Episodes
