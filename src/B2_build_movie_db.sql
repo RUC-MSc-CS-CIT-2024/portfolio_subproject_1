@@ -9,11 +9,11 @@ DROP TABLE IF EXISTS media_in_collection;
 DROP TABLE IF EXISTS media_production_country;
 DROP TABLE IF EXISTS media_production_company;
 DROP TABLE IF EXISTS related_media;
-DROP TABLE IF EXISTS media;
 DROP TABLE IF EXISTS movie;
 DROP TABLE IF EXISTS series;
 DROP TABLE IF EXISTS season;
 DROP TABLE IF EXISTS episode;
+DROP TABLE IF EXISTS media;
 DROP TABLE IF EXISTS person;
 DROP TABLE IF EXISTS production_company;
 DROP TABLE IF EXISTS country;
@@ -22,13 +22,17 @@ DROP TABLE IF EXISTS job_category;
 DROP TABLE IF EXISTS "collection";
 
 CREATE TABLE country (
-    code    VARCHAR(4)  PRIMARY KEY,
-    "name"  VARCHAR(50) NOT NULL
+    country_id  INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    imdb_country_code   VARCHAR(4)  NULL,
+    iso_code            VARCHAR(3) NULL,
+    "name"              VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE "language" (
-    code    VARCHAR(4)  PRIMARY KEY,
-    "name"  VARCHAR(50) NOT NULL
+    language_id         INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    imdb_language_code  VARCHAR(4)  NULL,
+    iso_code            VARCHAR(3)  NOT NULL,
+    "name"              VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE job_category (
@@ -73,7 +77,7 @@ CREATE TABLE media_genre (
 CREATE TABLE media_production_country (
     media_production_country_id INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     media_id                    INTEGER     NOT NULL REFERENCES media(media_id),
-    country_code                VARCHAR(2)  NOT NULL REFERENCES country(code)
+    country_id                  INTEGER NOT NULL REFERENCES country(country_id)
 );
 
 CREATE TABLE score (
@@ -107,14 +111,14 @@ CREATE TABLE release (
     release_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title           TEXT        NOT NULL,
     release_date    DATE        NULL,
-    country_code    VARCHAR(4)  NULL REFERENCES country(code), -- Region
+    country_id      INTEGER     NULL REFERENCES country(country_id), -- Region
     media_id        INTEGER     NOT NULL REFERENCES media(media_id) 
 );
 
 CREATE TABLE spoken_language (
     spoken_language_id  INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     release_id          INTEGER     NOT NULL REFERENCES release(release_id),
-    language_code       VARCHAR(4)  NOT NULL REFERENCES "language"(code)
+    language_id         INTEGER NOT NULL REFERENCES "language"(language_id)
 );
 
 CREATE TABLE promotional_media (
