@@ -45,8 +45,7 @@ CREATE TABLE media (
     budget      INTEGER         NULL,
     imdb_id     VARCHAR(10)     NULL,
     website     VARCHAR(100)    NULL,
-    awards      VARCHAR(80)     NULL,
-    poster      VARCHAR(180)    NULL
+    awards      VARCHAR(80)     NULL
 );
 
 CREATE TABLE season (
@@ -109,7 +108,8 @@ CREATE TABLE release (
     title           VARCHAR(50) NOT NULL,
     release_date    DATE        NULL,
     country_code    VARCHAR(2)  NOT NULL REFERENCES country(code), -- Region
-    media_id        INTEGER     NOT NULL REFERENCES media(media_id) 
+    media_id        INTEGER     NOT NULL REFERENCES media(media_id),
+    rated           VARCHAR(80) NULL
 );
 
 CREATE TABLE spoken_language (
