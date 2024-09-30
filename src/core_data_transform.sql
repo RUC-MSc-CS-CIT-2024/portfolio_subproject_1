@@ -44,6 +44,30 @@ BEGIN
     END IF;
 END $$;
 
+-- remove all data to allow for multiple executions
+TRUNCATE TABLE media_genre;
+TRUNCATE TABLE score;
+TRUNCATE TABLE spoken_language;
+TRUNCATE TABLE crew_member;
+TRUNCATE TABLE cast_member;
+TRUNCATE TABLE promotional_media;
+TRUNCATE TABLE release;
+TRUNCATE TABLE media_in_collection;
+TRUNCATE TABLE media_production_country;
+TRUNCATE TABLE media_production_company;
+TRUNCATE TABLE related_media;
+TRUNCATE TABLE movie;
+TRUNCATE TABLE series;
+TRUNCATE TABLE season;
+TRUNCATE TABLE episode;
+TRUNCATE TABLE media;
+TRUNCATE TABLE person;
+TRUNCATE TABLE production_company;
+TRUNCATE TABLE country;
+TRUNCATE TABLE "language";
+TRUNCATE TABLE job_category;
+TRUNCATE TABLE "collection";
+
 -- Countries
 
 INSERT INTO country (imdb_country_code, iso_code, "name") VALUES
