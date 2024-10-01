@@ -48,8 +48,8 @@ CREATE TABLE media (
     box_office  INTEGER         NULL,
     budget      INTEGER         NULL,
     imdb_id     VARCHAR(10)     NULL,
-    website     VARCHAR(255)    NULL,
-    awards      VARCHAR(255)    NULL
+    website     VARCHAR(100)    NULL,
+    awards      VARCHAR(80)     NULL
 );
 
 CREATE TABLE season (
@@ -112,8 +112,9 @@ CREATE TABLE release (
     release_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title           TEXT        NOT NULL,
     release_date    DATE        NULL,
+    rated           VARCHAR(80) NULL
     "type"          VARCHAR(64) NULL,
-    country_id      INTEGER     NULL REFERENCES country(country_id), -- Region
+    country_id      INTEGER     NULL REFERENCES country(country_id),
     media_id        INTEGER     NOT NULL REFERENCES media(media_id) 
 );
 
