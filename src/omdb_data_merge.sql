@@ -135,3 +135,73 @@ SELECT m.media_id, p.production_company_id, m.type
 FROM media m
 JOIN prod_comps o ON o.tconst = m.imdb_id
 JOIN production_company p ON p.name = o.comp;
+
+
+--SCORE 
+-- Using ratings from omdb_data as it has rottentomatoes
+-- imdb score and metacatscore in omdb_data are the same
+
+--extracting data from JSON 
+--Changing source names
+--Fixing values
+--collecting vote counts for imdb
+WITH json_extract AS (
+    SELECT
+        o.tconst,
+        m.media_id,
+        CASE
+            WHEN json_data->>'Source' = 'Internet Movie Database' THEN 'IMDb'
+            WHEN json_data->>'Source' = 'Rotten Tomatoes' THEN 'RT'
+            WHEN json_data->>'Source' = 'Metacritic' THEN 'MC'
+            ELSE NULL
+        END AS source,
+        CASE
+            WHEN json_data->>'Source' = 'Internet Movie Database' 
+                THEN REPLACE(json_data->>'Value', '/10', '')
+            WHEN json_data->>'Source' = 'Rotten Tomatoes'
+                THEN REPLACE(json_data->>'Value', '%', '')
+            WHEN json_data->>'Source' = 'Metacritic'
+                THEN REPLACE(json_data->>'Value', '/100', '')
+            ELSE NULL
+        END AS value,
+        CASE
+            WHEN o.imdbvotes = 'N/A' OR o.imdbvotes = '' THEN 0
+            WHEN json_data->>'Source' = 'Internet Movie Database'
+                THEN REPLACE(o.imdbvotes, ',', '')::INTEGER
+            WHEN jsonb_array_length(o.ratings::jsonb) = 0
+                AND (o.imdbvotes != 'N/A' OR o.imdbvotes != '')
+                THEN REPLACE(o.imdbvotes,',','')::INTEGER
+            ELSE 0
+        END AS imdbvotes
+    FROM original.omdb_data o
+    JOIN media m ON m.imdb_id = o.tconst
+    LEFT JOIN LATERAL jsonb_array_elements(o.ratings::jsonb) AS json_data ON TRUE
+),  
+
+--updating score with the data from JSON and saving ids of updated rows
+--UPDATE happens only if the vote count is higher than the one in IMDB_DB
+imdb_score_update AS (
+    UPDATE score s
+    SET 
+        value = j.value,
+        vote_count = j.imdbvotes
+    FROM json_extract j
+    WHERE j.media_id = s.media_id
+      AND j.source = 'IMDb'
+      AND s.vote_count < j.imdbvotes
+    RETURNING s.media_id, s.source, 'updated' AS status
+)
+
+--insertion of Metacat data and Rotten tomatoes data as well as adding new data if it is not in score yet
+--using imdb_score_update status to check if it was not updated
+INSERT INTO score (source, value, vote_count, at, media_id)
+SELECT j.source, j.value, j.imdbvotes, CURRENT_TIMESTAMP, j.media_id
+FROM json_extract j
+LEFT JOIN imdb_score_update u ON u.media_id = j.media_id AND u.source = j.source
+LEFT JOIN score s ON j.media_id = s.media_id
+-- Insert IMDb ratings which are not in IMDB_DB
+WHERE (j.media_id != s.media_id
+        AND j.source = 'IMDb')
+-- Insert Other ratings
+    OR (u.status IS NULL 
+        AND j.source != 'IMDb');
