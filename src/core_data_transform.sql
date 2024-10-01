@@ -345,7 +345,7 @@ FROM split_genres;
 -- Insert release for media
 WITH
     titleaka_with_id AS (
-        SELECT ta.title, t.startyear, m.media_id, ta.region, ta.types
+        SELECT t.primarytitle, ta.title, t.startyear, m.media_id, ta.region, ta.types
         FROM original.title_akas AS ta
         JOIN media AS m ON m.imdb_id = ta.titleid
         JOIN original.title_basics AS t ON t.tconst = ta.titleid
@@ -360,7 +360,11 @@ SELECT
         ELSE (SELECT country_id FROM country WHERE imdb_country_code = region) 
     END),
     (CASE
-	    WHEN region = '' THEN NULL
+	    WHEN types = '' THEN (CASE
+            WHEN originaltitle = title THEN 'original'
+            WHEN primarytitle = title THEN 'primary'
+            ELSE NULL
+        END)
         ELSE SPLIT_PART(types, U&'0002', 1)
     END)
 FROM titleaka_with_id;
