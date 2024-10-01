@@ -345,7 +345,7 @@ FROM split_genres;
 -- Insert release for media
 WITH
     titleaka_with_id AS (
-        SELECT t.primarytitle, ta.title, t.startyear, m.media_id, ta.region, ta.types
+        SELECT t.originaltitle, t.primarytitle, ta.title, t.startyear, m.media_id, ta.region, ta.types
         FROM original.title_akas AS ta
         JOIN media AS m ON m.imdb_id = ta.titleid
         JOIN original.title_basics AS t ON t.tconst = ta.titleid
