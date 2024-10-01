@@ -55,41 +55,6 @@ INSERT INTO release (title, release_date, country_id, media_id, rated)
         AND o.released != ''
         AND media.media_id != u.media_id;
 
--- Updating countty codes to release
-/*
-Maybe we should discuss it before I start
-
-*/
-WITH omdb_country AS (
-	SELECT tconst, unnest(string_to_array(country, ', ')) as country
-	FROM original.omdb_data o
-	WHERE o.country !='N/A'
-		AND o.country != ''
-		AND o.country IS NOT NULL),
-country_merge AS (
-	SELECT tconst, country
-	FROM omdb_country o
-	JOIN country c ON o.country = c.name),
-other_countries AS (
-    SELECT o.country
-    FROM omdb_country o
-    LEFT JOIN country_merge cm ON o.tconst = cm.tconst AND o.country = cm.country
-    WHERE cm.country IS NULL)
-
-
---PROMOTIONAL MEDIA
-
-/*
-***IDEA***
-What if we create a table and have types in there?
-
-related_media_category(categoryname, parentcategory)
-
-We can have then images, websites, videos without parentcat
-and subcategories like poster, actor, director, premiere for images
-and etc... 
-*/
-
 --insert posters
 INSERT INTO promotional_media(release_id, "type", uri)
 SELECT r.release_id, 'poster', o.poster
@@ -205,3 +170,45 @@ WHERE (j.media_id != s.media_id
 -- Insert Other ratings
     OR (u.status IS NULL 
         AND j.source != 'IMDb');
+
+
+-- ______________///ADDITIONAL THOUGHTS AND COMMENTS\\\_______________
+--********************************************************************
+--____________________________________________________________________
+
+
+-- Updating countty codes to release
+/*
+Maybe we should discuss it before I start
+
+
+WITH omdb_country AS (
+	SELECT tconst, unnest(string_to_array(country, ', ')) as country
+	FROM original.omdb_data o
+	WHERE o.country !='N/A'
+		AND o.country != ''
+		AND o.country IS NOT NULL),
+country_merge AS (
+	SELECT tconst, country
+	FROM omdb_country o
+	JOIN country c ON o.country = c.name),
+other_countries AS (
+    SELECT o.country
+    FROM omdb_country o
+    LEFT JOIN country_merge cm ON o.tconst = cm.tconst AND o.country = cm.country
+    WHERE cm.country IS NULL)
+
+*/
+
+--PROMOTIONAL MEDIA
+
+/*
+***IDEA***
+What if we create a table and have types in there?
+
+related_media_category(categoryname, parentcategory)
+
+We can have then images, websites, videos without parentcat
+and subcategories like poster, actor, director, premiere for images
+and etc... 
+*/
