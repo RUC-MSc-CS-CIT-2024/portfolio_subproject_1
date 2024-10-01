@@ -112,7 +112,7 @@ CREATE TABLE release (
     release_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title           TEXT        NOT NULL,
     release_date    DATE        NULL,
-    rated           VARCHAR(80) NULL
+    rated           VARCHAR(80) NULL,
     "type"          VARCHAR(64) NULL,
     country_id      INTEGER     NULL REFERENCES country(country_id),
     media_id        INTEGER     NOT NULL REFERENCES media(media_id) 
