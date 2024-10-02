@@ -165,8 +165,8 @@ BEGIN
 
     RETURN QUERY
     SELECT p.person_id, 
-			p.name, 
-			json_agg(json_build_object('media_id', "cast".media_id, 'character', REPLACE(REPLACE("cast".character,'[',''),']',''),'crew_role',jc.name))
+		p.name, 
+		json_agg(json_build_object('media_id', "cast".media_id, 'character', REPLACE(REPLACE("cast".character,'[',''),']',''),'crew_role',jc.name))
     FROM person p
     LEFT JOIN cast_member "cast" USING (person_id)
     LEFT JOIN crew_member crew USING (person_id, media_id)
