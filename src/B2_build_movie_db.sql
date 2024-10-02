@@ -132,29 +132,29 @@ CREATE TABLE promotional_media (
 );
 
 CREATE TABLE person (
-    person_id       INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    "name"          VARCHAR(50) NOT NULL,
-    birth_date      DATE        NULL,
-    death_date      DATE        NULL,
-    "description"   TEXT        NULL,
-    score           DECIMAL     NOT NULL DEFAULT 0,
-    imdb_id         VARCHAR(10) NULL
+    person_id       INTEGER      PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"          VARCHAR(150) NOT NULL,
+    birth_date      DATE         NULL,
+    death_date      DATE         NULL,
+    "description"   TEXT         NULL,
+    score           DECIMAL      NOT NULL DEFAULT 0,
+    imdb_id         VARCHAR(10)  NULL
 );
 
 CREATE TABLE crew_member (
-    crew_member_id  INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    "role"          VARCHAR(50) NULL,
-    person_id       INTEGER     NOT NULL REFERENCES person(person_id),
-    media_id        INTEGER     NOT NULL REFERENCES media(media_id),
-    job_category_id INTEGER     NOT NULL REFERENCES job_category(job_category_id)
+    crew_member_id  INTEGER      PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "role"          VARCHAR(150) NULL,
+    person_id       INTEGER      NOT NULL REFERENCES person(person_id),
+    media_id        INTEGER      NOT NULL REFERENCES media(media_id),
+    job_category_id INTEGER      NOT NULL REFERENCES job_category(job_category_id)
 );
 
 CREATE TABLE cast_member (
-    cast_member_id  INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    "role"          VARCHAR(50) NULL,
-    "character"     VARCHAR(50) NOT NULL,
-    person_id       INTEGER     NOT NULL REFERENCES person(person_id),
-    media_id        INTEGER     NOT NULL REFERENCES media(media_id)
+    cast_member_id  INTEGER      PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "role"          VARCHAR(150) NULL,
+    "character"     VARCHAR(150) NOT NULL,
+    person_id       INTEGER      NOT NULL REFERENCES person(person_id),
+    media_id        INTEGER      NOT NULL REFERENCES media(media_id)
 );
 
 CREATE TABLE production_company (
