@@ -350,7 +350,7 @@ WITH
         JOIN media AS m ON m.imdb_id = ta.titleid
         JOIN original.title_basics AS t ON t.tconst = ta.titleid
     )
-INSERT INTO "release" (title, release_date, media_id, country_id, "type")
+INSERT INTO "release" (title, release_date, media_id, country_id, title_type)
 SELECT 
     title, 
     TO_DATE(startyear, 'YYYY'), 
@@ -407,11 +407,12 @@ BEGIN
         insert_count := insert_count + 1;
 
         -- Create title for season ('{series_title} - Season {season_number}')
-        INSERT INTO "release" (title, release_date, media_id)
+        INSERT INTO "release" (title, release_date, media_id, title_type)
         VALUES (
             FORMAT('%s - Season %s', current_season.show_title, current_season.season_number), 
             current_season.start_date, 
-            new_season_id);
+            new_season_id,
+            'primary');
 
         -- Increment the counter
         insert_count := insert_count + 1;

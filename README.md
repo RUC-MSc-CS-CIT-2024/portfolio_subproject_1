@@ -96,7 +96,7 @@ Portfolio Subproject made for the CIT 2024 course
 - Title
 	- *The title in that specific language.*
 
-- Type
+- Title Type
 	- *The different types of release, e.g., DVD, premiere.*
 
 ### Score
