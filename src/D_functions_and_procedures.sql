@@ -23,6 +23,44 @@ LANGUAGE 'plpgsql';
 --D2 TEST
 SELECT * FROM simple_search('apple',1);
 
+-- Structured string search
+CREATE OR REPLACE FUNCTION structured_string_search (
+  p_title VARCHAR(100), 
+  p_plot VARCHAR(100), 
+  p_character VARCHAR(100), 
+  p_person VARCHAR(100), 
+  p_user_id INTEGER
+)
+RETURNS TABLE (media_id INTEGER, title TEXT)
+AS $$
+BEGIN
+  -- SEARCH HISTORY
+  INSERT INTO search_history (user_id, "type", query)
+  VALUES (p_user_id, 'structured_string_search', 
+          FORMAT('title: %s, plot: %s, character: %s, person: %s', p_title, p_plot, p_character, p_person));
+
+  -- RESULT
+  RETURN QUERY
+  WITH
+    search_result AS (
+        SELECT DISTINCT m.media_id, m.imdb_id, m."type" AS media_type
+        FROM media AS m
+        JOIN "release" r USING (media_id)
+        LEFT JOIN crew_member cr ON m.media_id = cr.media_id
+        LEFT JOIN cast_member ca ON m.media_id = ca.media_id
+        LEFT JOIN person p ON ca.person_id = p.person_id OR cr.person_id = p.person_id
+        WHERE (r.title ILIKE '%' || p_title || '%' OR r.title IS NULL)
+            AND (m.plot ILIKE '%' || p_plot || '%' OR m.plot IS NULL)
+            AND (ca."character" ILIKE '%' || p_character || '%' OR ca."character" IS NULL)
+            AND (p."name" ILIKE '%' || p_person || '%' OR p."name" IS NULL)
+    )
+  SELECT DISTINCT imdb_id, title, media_type
+  FROM search_result
+  JOIN "release" USING (media_id)
+  WHERE title_type = 'original';
+END;
+$$
+LANGUAGE 'plpgsql';
 
 --D3 Rating function
 CREATE OR REPLACE FUNCTION rate(p_userid INT, p_imdb_id VARCHAR, p_score NUMERIC)
