@@ -154,7 +154,7 @@ CREATE OR REPLACE FUNCTION structured_string_search_name(
     query VARCHAR(150),
     user_id INTEGER
 )
-RETURNS TABLE (person_id INTEGER, "name" VARCHAR(150), appearance TEXT, crew TEXT)
+RETURNS TABLE (person_id INTEGER, "name" VARCHAR(150), appearance json)
 AS $$
 BEGIN
 
@@ -166,18 +166,13 @@ BEGIN
     RETURN QUERY
     SELECT p.person_id, 
 			p.name, 
-			concat_ws(' ','Movie: ' || "cast".media_id || ' ' 
-                || 'Characters: ' || COALESCE(STRING_AGG(DISTINCT REPLACE(REPLACE("cast".character,'[',''),']',''), ', '))) AS appearance,
-
-			concat_ws(' ',COALESCE(STRING_AGG(DISTINCT jc.name,' ,')) 
-				|| ', ' ||COALESCE(STRING_AGG(DISTINCT "cast".role,', '))) AS crew
-
+			json_agg(json_build_object('media_id', "cast".media_id, 'character', REPLACE(REPLACE("cast".character,'[',''),']',''),'crew_role',jc.name))
     FROM person p
     LEFT JOIN cast_member "cast" USING (person_id)
     LEFT JOIN crew_member crew USING (person_id, media_id)
 	LEFT JOIN job_category jc ON crew.job_category_id = jc.job_category_id
     WHERE p.name ILIKE '%'||query||'%'
-	GROUP BY p.person_id,"cast".media_id
+	GROUP BY p.person_id,p.name
 	ORDER BY p.person_id;
 
 END;
