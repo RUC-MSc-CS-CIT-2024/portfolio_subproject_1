@@ -59,7 +59,8 @@ BEGIN
         SET value = (SELECT AVG(score_value) FROM user_score WHERE media_id = v_media_id),
             vote_count = (SELECT COUNT(*) FROM user_score WHERE media_id = v_media_id),
             "at" = CURRENT_TIMESTAMP
-        WHERE media_id = v_media_id;
+        WHERE media_id = v_media_id
+        AND source = 'userrating';
     ELSE
         -- Insert a new average score into the score table if none exists
         INSERT INTO score (source, value, vote_count, media_id)
