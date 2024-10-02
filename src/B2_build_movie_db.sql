@@ -9,11 +9,11 @@ DROP TABLE IF EXISTS media_in_collection;
 DROP TABLE IF EXISTS media_production_country;
 DROP TABLE IF EXISTS media_production_company;
 DROP TABLE IF EXISTS related_media;
-DROP TABLE IF EXISTS media;
 DROP TABLE IF EXISTS movie;
 DROP TABLE IF EXISTS series;
 DROP TABLE IF EXISTS season;
 DROP TABLE IF EXISTS episode;
+DROP TABLE IF EXISTS media;
 DROP TABLE IF EXISTS person;
 DROP TABLE IF EXISTS production_company;
 DROP TABLE IF EXISTS country;
@@ -22,36 +22,40 @@ DROP TABLE IF EXISTS job_category;
 DROP TABLE IF EXISTS "collection";
 
 CREATE TABLE country (
-    code    VARCHAR(2)  PRIMARY KEY,
-    "name"  VARCHAR(50) NOT NULL
+    country_id  INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    imdb_country_code   VARCHAR(4)  NULL,
+    iso_code            VARCHAR(3) NULL,
+    "name"              VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE "language" (
-    code    VARCHAR(2)  PRIMARY KEY,
-    "name"  VARCHAR(50) NOT NULL
+    language_id         INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    imdb_language_code  VARCHAR(4)  NULL,
+    iso_code            VARCHAR(3)  NOT NULL,
+    "name"              VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE job_category (
-    job_category_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    job_category_id     INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     "name"  VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE media (
-    media_id          INTEGER         PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    media_id    INTEGER         PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     "type"      VARCHAR(50)     NOT NULL,
     plot        TEXT            NULL,
     runtime     INTEGER         NULL,
     box_office  INTEGER         NULL,
     budget      INTEGER         NULL,
     imdb_id     VARCHAR(10)     NULL,
-    website     VARCHAR(255)    NULL,
-    awards      VARCHAR(255)    NULL
+    website     VARCHAR(100)    NULL,
+    awards      VARCHAR(80)     NULL
 );
 
 CREATE TABLE season (
     media_id        INTEGER     PRIMARY KEY,
     "status"        VARCHAR(50) NOT NULL,
-    season_number   INTEGER     NOT NULL,
+    season_number   INTEGER     NULL,
     end_date        DATE        NULL,
     series_id       INTEGER     NOT NULL REFERENCES media(media_id),
     FOREIGN KEY (media_id) REFERENCES media(media_id)
@@ -59,7 +63,7 @@ CREATE TABLE season (
 
 CREATE TABLE episode (
     media_id        INTEGER PRIMARY KEY,
-    episode_number  INTEGER NOT NULL,
+    episode_number  INTEGER NULL,
     season_id       INTEGER NOT NULL REFERENCES media(media_id),
     FOREIGN KEY (media_id) REFERENCES media(media_id)
 );
@@ -71,17 +75,18 @@ CREATE TABLE media_genre (
 );
 
 CREATE TABLE media_production_country (
-    media_production_country_id INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    media_id                    INTEGER     NOT NULL REFERENCES media(media_id),
-    country_code                VARCHAR(2)  NOT NULL REFERENCES country(code)
+    media_production_country_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    media_id                    INTEGER NOT NULL REFERENCES media(media_id),
+    country_id                  INTEGER NOT NULL REFERENCES country(country_id)
 );
 
 CREATE TABLE score (
-    score_id        INTEGER     PRIMARY KEY,
-    source          INTEGER     NOT NULL,
+    score_id        INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    source          VARCHAR(20) NOT NULL,
     "value"         VARCHAR(20) NOT NULL,
+    vote_count      INTEGER     NOT NULL DEFAULT 0,
     "at"            TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (score_id) REFERENCES media(media_id)
+    media_id        INTEGER     NOT NULL REFERENCES media(media_id)
 );
 
 CREATE TABLE "collection" (
@@ -105,16 +110,18 @@ CREATE TABLE related_media (
 
 CREATE TABLE release (
     release_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    title           VARCHAR(50) NOT NULL,
+    title           TEXT        NOT NULL,
     release_date    DATE        NULL,
-    country_code    VARCHAR(2)  NOT NULL REFERENCES country(code), -- Region
+    rated           VARCHAR(80) NULL,
+    "type"          VARCHAR(64) NULL,
+    country_id      INTEGER     NULL REFERENCES country(country_id),
     media_id        INTEGER     NOT NULL REFERENCES media(media_id) 
 );
 
 CREATE TABLE spoken_language (
-    spoken_language_id  INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    release_id          INTEGER     NOT NULL REFERENCES release(release_id),
-    language_code       VARCHAR(2)  NOT NULL REFERENCES "language"(code)
+    spoken_language_id  INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    release_id          INTEGER NOT NULL REFERENCES release(release_id),
+    language_id         INTEGER NOT NULL REFERENCES "language"(language_id)
 );
 
 CREATE TABLE promotional_media (

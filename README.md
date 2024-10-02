@@ -16,16 +16,22 @@ Portfolio Subproject made for the CIT 2024 course
 
 ### Country
 
-- **Code**
-	- *A unique code for each country based on [ISO 3166-1 A-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) standard*
+- **IMDb language code**
+	- *The language code IMDb uses to identify a language for a media*
+
+- **ISO Code**
+	- *A unique code for each country based on [ISO 3166-3](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) standard*
 
 - **Name**
 	- *Name of the country*
 
 ### Language
 
-- **Code**
-	- *A unique code for each language based on [ISO 639-1](https://en.wikipedia.org/wiki/ISO_639-1) standard*
+- **IMDb language code**
+	- *The language code IMDb uses to identify a language for a media*
+
+- **ISO Code**
+	- *A unique code for each language based on [ISO 639-3](https://en.wikipedia.org/wiki/ISO_639-1) standard*
 
 - **Name**
 	- *Name of the language*
