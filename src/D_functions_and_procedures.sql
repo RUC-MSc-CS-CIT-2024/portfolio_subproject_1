@@ -153,14 +153,22 @@ DECLARE
     name_id INT;
     weighted_rating DECIMAL(5, 2);
 BEGIN
-    -- Iterate through all persons (you can restrict to actors if needed)
+    -- Iterate through all persons (actors and crew members)
     FOR name_id IN (SELECT person_id FROM person) LOOP
-        -- Calculate the weighted average rating for each person
+        -- Calculate the weighted average rating for each person (both actors and crew members)
         SELECT SUM(sc.value * sc.vote_count) / SUM(sc.vote_count)
         INTO weighted_rating
         FROM score sc
         INNER JOIN cast_member cm ON sc.media_id = cm.media_id
-        WHERE cm.person_id = name_id;
+        WHERE cm.person_id = name_id
+        
+        UNION ALL
+        
+        SELECT SUM(sc.value * sc.vote_count) / SUM(sc.vote_count)
+        INTO weighted_rating
+        FROM score sc
+        INNER JOIN crew_member cr ON sc.media_id = cr.media_id
+        WHERE cr.person_id = name_id;
 
         -- Update the person table with the calculated rating
         UPDATE person
