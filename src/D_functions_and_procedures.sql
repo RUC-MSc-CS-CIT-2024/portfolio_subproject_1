@@ -26,19 +26,19 @@ SELECT * FROM simple_search('apple',1);
 -- Structured string search
 
 CREATE OR REPLACE FUNCTION structured_string_search (
-  title VARCHAR(100), 
-  plot VARCHAR(100), 
-  "character" VARCHAR(100), 
-  person VARCHAR(100), 
-  user_id INTEGER
+  p_title VARCHAR(100), 
+  p_plot VARCHAR(100), 
+  p_character VARCHAR(100), 
+  p_person VARCHAR(100), 
+  p_user_id INTEGER
 )
 RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
   -- SEARCH HISTORY
-  INSERT INTO search_history (user_id, type, query)
+  INSERT INTO search_history (p_user_id, type, query)
   VALUES (user_id, 'structured_string_search', 
-          FORMAT('title: %s, plot: %s, character: %s, person: %s', title, plot, "character", person));
+          FORMAT('title: %s, plot: %s, character: %s, person: %s', p_title, p_plot, p_character, p_person));
 
   -- RESULT
   RETURN QUERY
@@ -50,10 +50,10 @@ BEGIN
         LEFT JOIN crew_member cr ON m.media_id = cr.media_id
         LEFT JOIN cast_member ca ON m.media_id = ca.media_id
         LEFT JOIN person p ON ca.person_id = p.person_id OR cr.person_id = p.person_id
-        WHERE (r.title ILIKE '%' || title || '%' OR r.title IS NULL)
-            AND (m.plot ILIKE '%' || plot || '%' OR m.plot IS NULL)
-            AND (ca."character" ILIKE '%' || "character" || '%' OR ca."character" IS NULL)
-            AND (p."name" ILIKE '%' || person || '%' OR p."name" IS NULL)
+        WHERE (r.title ILIKE '%' || p_title || '%' OR r.title IS NULL)
+            AND (m.plot ILIKE '%' || p_plot || '%' OR m.plot IS NULL)
+            AND (ca."character" ILIKE '%' || p_character || '%' OR ca."character" IS NULL)
+            AND (p."name" ILIKE '%' || p_person || '%' OR p."name" IS NULL)
     )
   SELECT DISTINCT imdb_id, title, media_type
   FROM search_result
