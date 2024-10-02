@@ -169,3 +169,6 @@ CREATE TABLE media_production_company (
     "type"                  VARCHAR(20) NOT NULL,
     PRIMARY KEY (media_id, production_company_id)
 );
+
+-- Add a new column to the person table this is for the name rating.
+ALTER TABLE person ADD COLUMN name_rating DECIMAL(3, 2);

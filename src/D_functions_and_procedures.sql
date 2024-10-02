@@ -146,3 +146,30 @@ BEGIN
     PERFORM rate(john_id, 'tt1375666', 9.0); 
     PERFORM rate(jane_id, 'tt1375666', 7.0); 
 END $$;
+
+-- D7
+CREATE OR REPLACE FUNCTION calculate_name_rating() RETURNS VOID AS $$
+DECLARE
+    name_id INT;
+    weighted_rating DECIMAL(5, 2);
+BEGIN
+    FOR name_id IN (SELECT person_id FROM person) LOOP
+        -- Calculate the weighted average rating for each person
+        SELECT SUM(averagerating * numvotes) / SUM(numvotes)
+        INTO weighted_rating
+        FROM title
+        INNER JOIN title_principals ON title.title_id = title_principals.title_id
+        WHERE title_principals.person_id = name_id;
+
+        UPDATE person
+        SET name_rating = weighted_rating
+        WHERE person_id = name_id;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D7 Test Name Rating Calculation
+DO $$
+BEGIN
+    PERFORM calculate_name_rating();
+END $$;
