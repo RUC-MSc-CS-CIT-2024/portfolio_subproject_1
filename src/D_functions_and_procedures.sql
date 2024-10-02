@@ -154,7 +154,7 @@ CREATE OR REPLACE FUNCTION structured_string_search_name(
     query VARCHAR(150),
     user_id INTEGER
 )
-RETURNS TABLE (person_id INTEGER, "name" VARCHAR(150), appearance json)
+RETURNS TABLE (person_id INTEGER, "name" VARCHAR(150), filmography json)
 AS $$
 BEGIN
 
