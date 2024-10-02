@@ -146,3 +146,39 @@ BEGIN
     PERFORM rate(john_id, 'tt1375666', 9.0); 
     PERFORM rate(jane_id, 'tt1375666', 7.0); 
 END $$;
+
+-- D8 List Actors by Popularity
+CREATE OR REPLACE FUNCTION list_actors_by_popularity(p_media_id INT)
+RETURNS TABLE (actor_id INT, actor_name TEXT, actor_rating DECIMAL(3, 2)) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.person_id, p."name", p.name_rating
+    FROM person p
+    INNER JOIN cast_member cm ON p.person_id = cm.person_id
+    WHERE cm.media_id = p_media_id
+    ORDER BY p.name_rating DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D8 Test List Actors by Popularity
+-- Test with a sample media ID
+SELECT * FROM list_actors_by_popularity(1);
+
+-- D8 List Co-Actors by Popularity for a Given Actor
+CREATE OR REPLACE FUNCTION list_co_actors_by_popularity(p_actor_id INT)
+RETURNS TABLE (co_actor_id INT, co_actor_name TEXT, co_actor_rating DECIMAL(3, 2)) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT DISTINCT p2.person_id, p2."name", p2.name_rating
+    FROM cast_member cm1
+    INNER JOIN cast_member cm2 ON cm1.media_id = cm2.media_id
+    INNER JOIN person p2 ON cm2.person_id = p2.person_id
+    WHERE cm1.person_id = p_actor_id
+      AND cm2.person_id != p_actor_id
+    ORDER BY p2.name_rating DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D8 Test List Co-Actors by Popularity
+-- Test with a sample actor ID
+SELECT * FROM list_co_actors_by_popularity(1);
