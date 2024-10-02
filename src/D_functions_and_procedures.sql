@@ -35,8 +35,8 @@ RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
   -- SEARCH HISTORY
-  INSERT INTO search_history (p_user_id, type, query)
-  VALUES (user_id, 'structured_string_search', 
+  INSERT INTO search_history (user_id, "type", query)
+  VALUES (p_user_id, 'structured_string_search', 
           FORMAT('title: %s, plot: %s, character: %s, person: %s', p_title, p_plot, p_character, p_person));
 
   -- RESULT
@@ -57,7 +57,7 @@ BEGIN
   SELECT DISTINCT imdb_id, title, media_type
   FROM search_result
   JOIN "release" USING (media_id)
-  WHERE "type" = 'original';
+  WHERE title_type = 'original';
 END;
 $$
 LANGUAGE 'plpgsql';
