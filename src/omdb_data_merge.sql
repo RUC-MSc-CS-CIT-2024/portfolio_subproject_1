@@ -176,53 +176,6 @@ WHERE (j.media_id != s.media_id
 
 --INSERT INTO MEDIA_PRODUCTION_COUNTRY
 
-
---MAKING ISO and NAME UNIQUE
-ALTER TABLE country ADD CONSTRAINT unique_iso_name UNIQUE (iso_code, name);
-
---INSERTING MISSING COUNTRY ISO CODES AND NAMES
-INSERT INTO country (iso_code, name)
-VALUES
-    ('BLZ', 'Belize'),
-    ('BMU', 'Bermuda'),
-    ('CPV', 'Cape Verde'),
-    ('CYM', 'Cayman Islands'),
-    ('CAF', 'Central African Republic'),
-    ('TCD', 'Chad'),
-    ('COG', 'Congo'),
-    ('CIV', 'Côte d''Ivoire'),
-    ('DJI', 'Djibouti'),
-    ('GNQ', 'Equatorial Guinea'),
-    ('YUG', 'Federal Republic of Yugoslavia'),
-    ('GUF', 'French Guiana'),
-    ('PYF', 'French Polynesia'),
-    ('GMB', 'Gambia'),
-    ('GIN', 'Guinea'),
-    ('GNB', 'Guinea-Bissau'),
-    ('VAT', 'Holy See (Vatican City State)'),
-    ('IMN', 'Isle Of Man'),
-    ('KOR', 'Korea'),
-    ('MKD', 'Republic of Macedonia'),
-    ('LSO', 'Lesotho'),
-    ('LBR', 'Liberia'),
-    ('MAC', 'Macao'),
-    ('PSE', 'Occupied Palestinian Territory'),
-    ('PLW', 'Palau'),
-    ('PNG', 'Papua New Guinea'),
-    ('MKD', 'Republic of North Macedonia'),
-    ('LCA', 'Saint Lucia'),
-    ('VCT', 'Saint Vincent and the Grenadines'),
-    ('WSM', 'Samoa'),
-    ('SUR', 'Suriname'),
-    ('SJM', 'Svalbard and Jan Mayen'),
-    ('SWZ', 'Swaziland'),
-    ('COD', 'The Democratic Republic Of Congo'),
-    ('TLS', 'Timor-Leste'),
-    ('VIR', 'U.S. Virgin Islands'),
-    ('VUT', 'Vanuatu'),
-    ('MMR', 'Myanmar (Burma)')
-ON CONFLICT (iso_code, name) DO NOTHING;
-
 --GET COUNTRIES IN SEPARATE ROWS AND WITHOUT WRONG DATA
 WITH omdb_country AS (
 	SELECT tconst, unnest(string_to_array(country, ', ')) as country
@@ -230,30 +183,45 @@ WITH omdb_country AS (
 	WHERE o.country !='N/A'
 		AND o.country != ''
 		AND o.country IS NOT NULL),
+
 --MERGING WITH COUNTRIES
 country_merge AS (
-
 	SELECT o.tconst, o.country, c.name, c.iso_code, c.country_id
 	FROM omdb_country o
 	JOIN country c ON o.country = c.name),
+
 --GETTING UNMATCHING COUNTRIES AND THERI IDS
 --CONVERTING NAMES TO THE CORRECT SO THEY MATCH COUNTRY TABLE
 other_countries AS (
   SELECT o.tconst, 
 		CASE  
 			WHEN o.country = 'USA' THEN 'United States'
-			WHEN o.country = 'Côte d&#x27;Ivoire' THEN 'Côte d''Ivoire'
+			WHEN o.country = 'Côte d&#x27;Ivoire' THEN 'Ivory Coast'
 			WHEN o.country = 'UK' THEN 'United Kingdom'
 			WHEN o.country = 'Vatican' THEN 'Holy See (Vatican City State)'
+			WHEN o.country = 'Congo' THEN 'Republic of the Congo'
+			WHEN o.country = 'Federal Republic of Yugoslavia' THEN 'Yugoslavia'
+			WHEN o.country = 'Isle of Man' THEN 'Isle of Man'
+			WHEN o.country = 'Korea' THEN 'South Korea'
+			WHEN o.country = 'Republic of Macedonia' THEN 'North Macedonia'
+			WHEN o.country = 'Macao' THEN 'Macau'
+			WHEN o.country = 'Occupied Palestinian Territory' THEN 'Palestine'
+			WHEN o.country = 'Republic of North Macedonia' THEN 'Macedonian'
+			WHEN o.country = 'Swaziland' THEN 'Eswatini'
+			WHEN o.country = 'The Democratic Republic Of Congo' THEN 'Democratic Republic of the Congo'
+			WHEN o.country = 'U.S. Virgin Islands' THEN 'Virgin Islands'
+			WHEN o.country = 'Myanmar (Burma)' THEN 'Burma'
 			END AS country
   FROM omdb_country o
   LEFT JOIN country_merge cm ON o.tconst = cm.tconst AND o.country = cm.country
   WHERE cm.country IS NULL),
+
 --MERGING FIXED COUNTRIES WITH country_id form country TABLE
 other_countries_merge AS (
 	SELECT o.tconst, o.country, c.name, c.iso_code, c.country_id
 	FROM other_countries o
 	JOIN country c ON o.country = c.name),
+    
 --FINAL TABLE WHERE I COMBINED BOTH MERGED TABLES
 --THE NUMBER THE OF RECORDS MATCHES THE ONE IN OMDB
 final_table_to_insert AS (
