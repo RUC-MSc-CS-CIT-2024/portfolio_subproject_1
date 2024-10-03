@@ -181,3 +181,27 @@ language plpgsql;
 
 --TEST
 SELECT * FROM structured_string_search_name('Jennifer',1);
+
+
+-- D11 Function to find titles to match the exact-match querying 
+CREATE OR REPLACE FUNCTION exact_match_titles(
+    keywords TEXT[]
+)
+RETURNS TABLE (media_id INTEGER) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT m.media_id
+    FROM media m
+    JOIN (
+        SELECT tconst
+        FROM wi
+        WHERE word = ANY(keywords)
+        GROUP BY tconst
+        HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
+    ) w ON m.imdb_id = w.tconst;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D11 TEST 
+SELECT * FROM exact_match_titles(ARRAY['apple','mads','mikkelsen']);
+SELECT title FROM release WHERE media_id=47460;
