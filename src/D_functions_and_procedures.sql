@@ -167,12 +167,6 @@ BEGIN
     WHERE person.person_id = sub.person_id;
 END;
 $$ LANGUAGE plpgsql;
-
-DO $$
-BEGIN
-    PERFORM calculate_name_rating();
-END $$;
-
 -- D7 Test Name Rating Calculation
 DO $$
 BEGIN
