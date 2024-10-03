@@ -348,19 +348,17 @@ BEGIN
     RETURN QUERY
     -- Select matching titles based on the keyword query
     WITH matched_titles AS (
-        SELECT m.imdb_id
-        FROM media m
-        JOIN wi ON m.imdb_id::TEXT = wi.tconst
-        WHERE wi.word = ANY(keywords)
-        GROUP BY m.imdb_id
-        HAVING COUNT(DISTINCT wi.word) = array_length(keywords, 1)
+        SELECT m.media_id, m.imdb_id
+        FROM release r
+        JOIN media m ON r.media_id = m.media_id
+        WHERE r.title ILIKE ANY (ARRAY(SELECT '%' || kw || '%' FROM unnest(keywords) AS kw))
     ),
     
     -- Select all words from the wi table associated with the matched titles
     word_frequencies AS (
         SELECT wi.word, COUNT(*)::INTEGER AS frequency
         FROM wi
-        JOIN matched_titles mt ON wi.tconst = mt.imdb_id::TEXT
+        JOIN matched_titles mt ON wi.tconst = mt.imdb_id
         GROUP BY wi.word
     )
     
