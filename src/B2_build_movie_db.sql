@@ -1,9 +1,12 @@
+DROP TABLE IF EXISTS title_title_type;
+DROP TABLE IF EXISTS title_title_attribute;
 DROP TABLE IF EXISTS media_genre;
 DROP TABLE IF EXISTS score;
 DROP TABLE IF EXISTS spoken_language;
 DROP TABLE IF EXISTS crew_member;
 DROP TABLE IF EXISTS cast_member;
 DROP TABLE IF EXISTS promotional_media;
+DROP TABLE IF EXISTS title;
 DROP TABLE IF EXISTS release;
 DROP TABLE IF EXISTS media_in_collection;
 DROP TABLE IF EXISTS media_production_country;
@@ -20,6 +23,8 @@ DROP TABLE IF EXISTS country;
 DROP TABLE IF EXISTS "language";
 DROP TABLE IF EXISTS job_category;
 DROP TABLE IF EXISTS "collection";
+DROP TABLE IF EXISTS title_attribute;
+DROP TABLE IF EXISTS title_type;
 
 CREATE TABLE country (
     country_id  INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -68,10 +73,15 @@ CREATE TABLE episode (
     FOREIGN KEY (media_id) REFERENCES media(media_id)
 );
 
+
+CREATE TABLE genre (
+    genre_id    INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"      VARCHAR(50) NOT NULL
+);
+
 CREATE TABLE media_genre (
-    "name"      VARCHAR(50) NOT NULL,
     media_id    INTEGER     NOT NULL REFERENCES media(media_id),
-    PRIMARY KEY (media_id, "name")
+    genre_id    INTEGER     NOT NULL REFERENCES genre(genre_id)
 );
 
 CREATE TABLE media_production_country (
@@ -110,12 +120,40 @@ CREATE TABLE related_media (
 
 CREATE TABLE release (
     release_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    title           TEXT        NOT NULL,
     release_date    DATE        NULL,
     rated           VARCHAR(80) NULL,
-    title_type      VARCHAR(64) NULL,
+    "type"          VARCHAR(50) NOT NULL,
     country_id      INTEGER     NULL REFERENCES country(country_id),
-    media_id        INTEGER     NOT NULL REFERENCES media(media_id) 
+    media_id        INTEGER     NOT NULL REFERENCES media(media_id),
+    title_id        INTEGER     NULL REFERENCES title(title_id)
+);
+
+CREATE TABLE title (
+    title_id    INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"      TEXT        NOT NULL,
+    country_id  INTEGER     NULL REFERENCES country(country_id),
+    language_id INTEGER     NULL REFERENCES "language"(language_id),
+    media_id    INTEGER     NOT NULL REFERENCES media(media_id)
+);
+
+CREATE TABLE title_type (
+    title_type_id   INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"          TEXT        NOT NULL
+);
+
+CREATE TABLE title_attribute (
+    title_attribute_id  INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"              TEXT        NOT NULL
+);
+
+CREATE TABLE title_title_type (
+    title_type_id   INTEGER NOT NULL REFERENCES title_type(title_type_id),
+    title_id        INTEGER NOT NULL REFERENCES title(title_id)
+);
+
+CREATE TABLE title_title_attribute (
+    title_attribute_id  INTEGER NOT NULL REFERENCES title_attribute(title_attribute_id),
+    title_id            INTEGER NOT NULL REFERENCES title(title_id)
 );
 
 CREATE TABLE spoken_language (
@@ -217,28 +255,6 @@ BEGIN
         ALTER TABLE public.omdb_data SET SCHEMA original;
     END IF;
 END $$;
-
--- remove all data to allow for multiple executions
-TRUNCATE TABLE media_genre CASCADE;
-TRUNCATE TABLE score CASCADE;
-TRUNCATE TABLE spoken_language CASCADE;
-TRUNCATE TABLE crew_member CASCADE;
-TRUNCATE TABLE cast_member CASCADE;
-TRUNCATE TABLE promotional_media CASCADE;
-TRUNCATE TABLE release CASCADE;
-TRUNCATE TABLE media_in_collection CASCADE;
-TRUNCATE TABLE media_production_country CASCADE;
-TRUNCATE TABLE media_production_company CASCADE;
-TRUNCATE TABLE related_media CASCADE;
-TRUNCATE TABLE season CASCADE;
-TRUNCATE TABLE episode CASCADE;
-TRUNCATE TABLE media CASCADE;
-TRUNCATE TABLE person CASCADE;
-TRUNCATE TABLE production_company CASCADE;
-TRUNCATE TABLE country CASCADE;
-TRUNCATE TABLE "language" CASCADE;
-TRUNCATE TABLE job_category CASCADE;
-TRUNCATE TABLE "collection" CASCADE;
 
 -- Countries
 
@@ -539,6 +555,17 @@ WITH
 INSERT INTO media_genre (media_id, "name")
 SELECT media_id, genre
 FROM split_genres; 
+
+-- Insert title for media
+WITH
+    titleaka_with_id AS (
+        SELECT t.originaltitle, t.primarytitle, ta.title, , m.media_id, ta.region, ta.types
+        FROM original.title_akas AS ta
+        JOIN media AS m ON m.imdb_id = ta.titleid
+        JOIN original.title_basics AS t ON t.tconst = ta.titleid
+    )
+INSERT INTO title ("name", "type", media_id)
+SELECT title, media_id
 
 -- Insert release for media
 WITH
