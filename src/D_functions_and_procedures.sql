@@ -149,34 +149,30 @@ END $$;
 
 -- D7
 CREATE OR REPLACE FUNCTION calculate_name_rating() RETURNS VOID AS $$
-DECLARE
-    name_id INT;
-    weighted_rating DECIMAL(5, 2);
 BEGIN
-    -- Iterate through all persons (actors and crew members)
-    FOR name_id IN (SELECT person_id FROM person) LOOP
-        -- Calculate the weighted average rating for each person (both actors and crew members)
-        SELECT SUM(sc.value * sc.vote_count) / SUM(sc.vote_count)
-        INTO weighted_rating
-        FROM score sc
-        INNER JOIN cast_member cm ON sc.media_id = cm.media_id
-        WHERE cm.person_id = name_id
-        
-        UNION ALL
-        
-        SELECT SUM(sc.value * sc.vote_count) / SUM(sc.vote_count)
-        INTO weighted_rating
-        FROM score sc
-        INNER JOIN crew_member cr ON sc.media_id = cr.media_id
-        WHERE cr.person_id = name_id;
-
-        -- Update the person table with the calculated rating
-        UPDATE person
-        SET name_rating = weighted_rating
-        WHERE person_id = name_id;
-    END LOOP;
+    -- Update the name_rating for all persons in a single query
+    UPDATE person
+    SET name_rating = sub.weighted_rating
+    FROM (
+        SELECT
+            p.person_id,
+            -- Use NULLIF to prevent division by zero
+            SUM(CAST(sc.value AS DECIMAL) * sc.vote_count) / NULLIF(SUM(sc.vote_count), 0) AS weighted_rating
+        FROM person p
+        LEFT JOIN cast_member cm ON p.person_id = cm.person_id
+        LEFT JOIN score sc ON cm.media_id = sc.media_id
+        LEFT JOIN crew_member cr ON p.person_id = cr.person_id
+        WHERE cm.media_id IS NOT NULL OR cr.media_id IS NOT NULL
+        GROUP BY p.person_id
+    ) AS sub
+    WHERE person.person_id = sub.person_id;
 END;
 $$ LANGUAGE plpgsql;
+
+DO $$
+BEGIN
+    PERFORM calculate_name_rating();
+END $$;
 
 -- D7 Test Name Rating Calculation
 DO $$
