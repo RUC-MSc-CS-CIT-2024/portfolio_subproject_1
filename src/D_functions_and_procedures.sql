@@ -23,7 +23,7 @@ LANGUAGE 'plpgsql';
 --D2 TEST
 SELECT * FROM simple_search('apple',1);
 
--- Structured string search
+-- D4 Structured string search
 CREATE OR REPLACE FUNCTION structured_string_search (
   p_title VARCHAR(100), 
   p_plot VARCHAR(100), 
@@ -147,6 +147,40 @@ BEGIN
     PERFORM rate(jane_id, 'tt1375666', 7.0); 
 END $$;
 
+--D5
+--With a query find actors, movies casted, roles played and their crew job info
+
+CREATE OR REPLACE FUNCTION structured_string_search_name(
+    query VARCHAR(150),
+    user_id INTEGER
+)
+RETURNS TABLE (person_id INTEGER, "name" VARCHAR(150), filmography json)
+AS $$
+BEGIN
+
+
+    INSERT INTO search_history (user_id, type, query)
+    VALUES (user_id, 'structured_string_search_name', query);
+
+
+    RETURN QUERY
+    SELECT p.person_id, 
+		p.name, 
+		json_agg(json_build_object('media_id', "cast".media_id, 'character', REPLACE(REPLACE("cast".character,'[',''),']',''),'crew_role',jc.name))
+    FROM person p
+    LEFT JOIN cast_member "cast" USING (person_id)
+    LEFT JOIN crew_member crew USING (person_id, media_id)
+	LEFT JOIN job_category jc ON crew.job_category_id = jc.job_category_id
+    WHERE p.name ILIKE '%'||query||'%'
+	GROUP BY p.person_id,p.name
+	ORDER BY p.person_id;
+
+END;
+$$
+language plpgsql;
+
+--TEST
+SELECT * FROM structured_string_search_name('Jennifer',1);
 
 -- D6 View to simplify queries for actors and their associated media
 CREATE OR REPLACE VIEW actor_media_view AS
