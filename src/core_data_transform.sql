@@ -268,7 +268,7 @@ INSERT INTO country (imdb_country_code, iso_code, "name") VALUES
 (NULL, 'BMU', 'Bermuda'),
 (NULL, 'CPV', 'Cape Verde'),
 (NULL, 'CYM', 'Cayman Islands'),
-(NULL, 'Central African Republic'),
+(NULL, 'CAF', 'Central African Republic'),
 (NULL, 'DJI', 'Djibouti'),
 (NULL, 'GNQ', 'Equatorial Guinea'),
 (NULL, 'GIN', 'Guinea'),

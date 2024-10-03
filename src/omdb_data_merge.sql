@@ -233,24 +233,4 @@ final_table_to_insert AS (
 INSERT INTO media_production_country(media_id, country_id)
 SELECT m.media_id, f.country_id
 FROM final_table_to_insert f
-LEFT JOIN media m ON f.tconst = m.imdb_id
-WHERE m.media_id IS NOT NULL
-ORDER BY country;
-
-
--- ______________///ADDITIONAL THOUGHTS AND COMMENTS\\\_______________
---********************************************************************
---____________________________________________________________________
-
---PROMOTIONAL MEDIA
-
-/*
-***IDEA***
-What if we create a table and have types in there?
-
-related_media_category(categoryname, parentcategory)
-
-We can have then images, websites, videos without parentcat
-and subcategories like poster, actor, director, premiere for images
-and etc... 
-*/
+LEFT JOIN media m ON f.tconst = m.imdb_id;
