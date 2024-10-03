@@ -181,3 +181,24 @@ language plpgsql;
 
 --TEST
 SELECT * FROM structured_string_search_name('Jennifer',1);
+
+
+-- D12 Function to best match querying, ranking and ordering the media.
+CREATE OR REPLACE FUNCTION best_match_titles(
+    keywords TEXT[]
+)
+RETURNS TABLE (media_id INTEGER, match_count INTEGER) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT m.media_id, COUNT(DISTINCT wi.word)::INTEGER AS match_count
+    FROM media m
+    JOIN wi ON m.imdb_id = wi.tconst
+    WHERE wi.word = ANY(keywords)
+    GROUP BY m.media_id
+    ORDER BY match_count DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D12 TEST
+SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
+SELECT title FROM release WHERE media_id=47460;
