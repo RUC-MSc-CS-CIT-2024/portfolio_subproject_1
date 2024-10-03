@@ -226,6 +226,32 @@ $$ LANGUAGE plpgsql;
 -- D6 TEST
 SELECT * FROM get_frequent_coplaying_actors('Jennifer Aniston');
 
+-- D7
+CREATE OR REPLACE FUNCTION calculate_name_rating() RETURNS VOID AS $$
+BEGIN
+    UPDATE person
+    SET name_rating = sub.weighted_rating
+    FROM (
+        SELECT
+            p.person_id,
+            -- NOTE: Here we use NULLIF to prevent division by zero.
+            SUM(CAST(sc.value AS DECIMAL) * sc.vote_count) / NULLIF(SUM(sc.vote_count), 0) AS weighted_rating
+        FROM person p
+        LEFT JOIN cast_member cm ON p.person_id = cm.person_id
+        LEFT JOIN score sc ON cm.media_id = sc.media_id
+        LEFT JOIN crew_member cr ON p.person_id = cr.person_id
+        WHERE cm.media_id IS NOT NULL OR cr.media_id IS NOT NULL
+        GROUP BY p.person_id
+    ) AS sub
+    WHERE person.person_id = sub.person_id;
+END;
+$$ LANGUAGE plpgsql;
+-- D7 Test Name Rating Calculation
+DO $$
+BEGIN
+    PERFORM calculate_name_rating();
+END $$;
+
 -- D8 List Actors by Popularity
 CREATE OR REPLACE FUNCTION list_actors_by_popularity(p_media_id INT)
 RETURNS TABLE (actor_id INT, actor_name TEXT, actor_rating DECIMAL(3, 2)) AS $$

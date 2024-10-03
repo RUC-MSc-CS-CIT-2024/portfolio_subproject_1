@@ -132,13 +132,14 @@ CREATE TABLE promotional_media (
 );
 
 CREATE TABLE person (
-    person_id       INTEGER      PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    "name"          VARCHAR(150) NOT NULL,
-    birth_date      DATE         NULL,
-    death_date      DATE         NULL,
-    "description"   TEXT         NULL,
-    score           DECIMAL      NOT NULL DEFAULT 0,
-    imdb_id         VARCHAR(10)  NULL
+    person_id       INTEGER       PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"          VARCHAR(150)  NOT NULL,
+    birth_date      DATE          NULL,
+    death_date      DATE          NULL,
+    "description"   TEXT          NULL,
+    score           DECIMAL       NOT NULL DEFAULT 0,
+    imdb_id         VARCHAR(10)   NULL,
+    name_rating     DECIMAL(6, 2) NULL
 );
 
 CREATE TABLE crew_member (
