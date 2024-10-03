@@ -345,12 +345,12 @@ FROM split_genres;
 -- Insert release for media
 WITH
     titleaka_with_id AS (
-        SELECT ta.title, t.startyear, m.media_id, ta.region, ta.types
+        SELECT t.originaltitle, t.primarytitle, ta.title, t.startyear, m.media_id, ta.region, ta.types
         FROM original.title_akas AS ta
         JOIN media AS m ON m.imdb_id = ta.titleid
         JOIN original.title_basics AS t ON t.tconst = ta.titleid
     )
-INSERT INTO "release" (title, release_date, media_id, country_id, "type")
+INSERT INTO "release" (title, release_date, media_id, country_id, title_type)
 SELECT 
     title, 
     TO_DATE(startyear, 'YYYY'), 
@@ -360,7 +360,11 @@ SELECT
         ELSE (SELECT country_id FROM country WHERE imdb_country_code = region) 
     END),
     (CASE
-	    WHEN region = '' THEN NULL
+	    WHEN types = '' THEN (CASE
+            WHEN originaltitle = title THEN 'original'
+            WHEN primarytitle = title THEN 'primary'
+            ELSE NULL
+        END)
         ELSE SPLIT_PART(types, U&'0002', 1)
     END)
 FROM titleaka_with_id;
@@ -403,11 +407,12 @@ BEGIN
         insert_count := insert_count + 1;
 
         -- Create title for season ('{series_title} - Season {season_number}')
-        INSERT INTO "release" (title, release_date, media_id)
+        INSERT INTO "release" (title, release_date, media_id, title_type)
         VALUES (
             FORMAT('%s - Season %s', current_season.show_title, current_season.season_number), 
             current_season.start_date, 
-            new_season_id);
+            new_season_id,
+            'primary');
 
         -- Increment the counter
         insert_count := insert_count + 1;
