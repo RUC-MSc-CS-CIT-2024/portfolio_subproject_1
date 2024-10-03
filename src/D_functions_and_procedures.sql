@@ -363,3 +363,191 @@ $$ LANGUAGE plpgsql;
 -- D12 TEST
 SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
 SELECT title FROM release WHERE media_id=47460;
+
+
+
+-------------------D9 SIMILAR MOVIES SEARCH-------------------------
+--------------------------------------------------------------------
+
+--FINAL FUNCTION SIMILAR MOVIES
+--THIS COMBINES OTHER FUNCTIONS WHICH ARE DECLARED LOWER IN THIS FILE
+CREATE OR REPLACE FUNCTION get_similar_movies(input_media_id INTEGER)
+RETURNS TABLE (
+	media_id INTEGER,
+	count INTEGER
+) AS $$
+
+DECLARE
+	input_media RECORD;
+BEGIN
+
+  --get title id and country of input_media_id
+	SELECT DISTINCT m.media_id, r.title, mpc.country_id INTO input_media
+	FROM media m
+	JOIN release r USING (media_id)
+	LEFT JOIN media_production_country mpc USING(media_id)
+	WHERE m.media_id = input_media_id;
+	
+	RETURN query
+	SELECT com_res.media_id, SUM(com_res.count)::INTEGER AS total_count
+	FROM (
+		SELECT *  FROM get_count_of_movies_with_same_actors(input_media_id) 
+		UNION ALL
+		SELECT *  FROM find_movies_from_the_same_country(input_media.country_id)
+		UNION ALL
+		SELECT *  FROM find_movie_similar_titles(input_media.title,3)
+		UNION ALL
+		SELECT *  FROM find_movies_with_similar_crew(input_media_id)
+	) AS com_res
+	GROUP BY com_res.media_id
+	ORDER BY total_count DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-------------------------------------------------------
+---------get_count_of_movies_with_same_actors----------
+	
+CREATE OR REPLACE FUNCTION get_count_of_movies_with_same_actors(input_media_id INTEGER)
+RETURNS TABLE(
+	media_id INTEGER,
+	count INTEGER
+) AS $$
+DECLARE
+	actor INTEGER;
+	actors INTEGER[];
+BEGIN
+	SELECT ARRAY_AGG(DISTINCT cm.person_id) INTO actors
+	FROM cast_member cm
+	WHERE cm.media_id = input_media_id;
+	
+	CREATE TEMPORARY TABLE similar_cast (
+	media_id INTEGER,
+	"count" INTEGER
+	) ON COMMIT DROP;
+	
+	FOREACH actor IN ARRAY COALESCE(actors, '{}')
+	LOOP
+		INSERT INTO similar_cast(media_id, "count")
+		SELECT DISTINCT cm.media_id, 1
+		FROM cast_member cm
+		WHERE cm.person_id = actor
+		GROUP BY cm.media_id;
+	END LOOP;
+	
+	RETURN query
+	SELECT s.media_id, count(s.media_id)::INTEGER
+	FROM similar_cast s
+	GROUP BY s.media_id;
+
+END;
+$$ LANGUAGE plpgsql;
+
+-------------------------------------------------------
+---------find_movies_from_the_same_country()-----------
+
+CREATE OR REPLACE FUNCTION find_movies_from_the_same_country(in_country_id INTEGER)
+RETURNS TABLE (
+	media_id INTEGER,
+	"count" INTEGER
+)AS $$
+BEGIN
+	RETURN query
+	SELECT mpc.media_id, count(mpc.media_id)::INTEGER
+	FROM media_production_country mpc
+	WHERE mpc.country_id = in_country_id
+	GROUP BY mpc.media_id;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+-------------------------------------------------------
+---------find_movies_with_similar_titles()-----------
+
+CREATE OR REPLACE FUNCTION find_movie_similar_titles(input_title TEXT, min_lenght INTEGER)
+RETURNS TABLE (
+	media_id INTEGER,
+	"count" INTEGER
+)AS $$
+DECLARE
+	word TEXT;
+	title_words TEXT[];
+BEGIN
+	CREATE TEMPORARY TABLE similar_title (
+		media_id INTEGER,
+		"count" INTEGER
+		) ON COMMIT DROP;
+	
+	title_words := string_to_array(input_title, ' ');
+	
+	FOREACH word IN ARRAY COALESCE(title_words, '{}')
+	LOOP
+		IF LENGTH(word) > min_lenght THEN
+			INSERT INTO similar_title
+			SELECT DISTINCT r.media_id, 1 AS "count"
+			FROM "release" r
+			WHERE r.title ILIKE '%' ||word|| '%';
+			RAISE NOTICE 'Word: % (Length: %)', word, LENGTH(word);
+		END IF;
+	END LOOP;
+	
+	RETURN query
+	SELECT s.media_id, count(s."count")::INTEGER as count
+	FROM similar_title s
+	GROUP BY s.media_id
+	ORDER BY count DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-------------------------------------------------------
+---------find_movies_with_similar_crew()-----------
+CREATE OR REPLACE FUNCTION find_movies_with_similar_crew(input_media_id INTEGER)
+RETURNS TABLE(
+	media_id INTEGER,
+	count INTEGER
+) AS $$
+DECLARE
+	"member" INTEGER;
+	members INTEGER[];
+BEGIN
+	SELECT ARRAY_AGG(DISTINCT cm.person_id) INTO members
+	FROM crew_member cm
+	WHERE cm.media_id = input_media_id;
+	
+	CREATE TEMPORARY TABLE similar_crew (
+	media_id INTEGER,
+	"count" INTEGER
+	) ON COMMIT DROP;
+	
+	FOREACH "member" IN ARRAY COALESCE(members, '{}')
+	LOOP
+		INSERT INTO similar_crew(media_id, "count")
+		SELECT DISTINCT cm.media_id, 1
+		FROM crew_member cm
+		WHERE cm.person_id = "member"
+		GROUP BY cm.media_id;
+	END LOOP;
+	
+	RETURN query
+	SELECT s.media_id, count(s.media_id)::INTEGER
+	FROM similar_crew s
+	GROUP BY s.media_id;
+END;
+$$ LANGUAGE plpgsql;
+
+--------------------------------------------------
+--=====================TEST=====================--
+--------------------------------------------------
+--SEPARATE SEARCH FUNCTIONS
+SELECT * FROM get_count_of_movies_with_same_actors(655);
+SELECT * FROM find_movies_from_the_same_country(173);
+SELECT * FROM find_movie_similar_titles('Twilight The Zone',3);
+SELECT * FROM find_movies_with_similar_crew(655);
+--SIMPLE SEARCH TEST
+--TEST-1
+SELECT * FROM get_similar_movies(665);
+--TEST-2
+SELECT s.media_id,count,title FROM get_similar_movies(665) s
+FULL JOIN release r ON s.media_id = r.media_id
+WHERE s.media_id IS NOT NULL
+ORDER BY count DESC;
