@@ -172,33 +172,107 @@ WHERE (j.media_id != s.media_id
         AND j.source != 'IMDb');
 
 
--- ______________///ADDITIONAL THOUGHTS AND COMMENTS\\\_______________
---********************************************************************
---____________________________________________________________________
 
 
--- Updating countty codes to release
-/*
-Maybe we should discuss it before I start
+--INSERT INTO MEDIA_PRODUCTION_COUNTRY
 
 
+--MAKING ISO and NAME UNIQUE
+ALTER TABLE country ADD CONSTRAINT unique_iso_name UNIQUE (iso_code, name);
+
+--INSERTING MISSING COUNTRY ISO CODES AND NAMES
+INSERT INTO country (iso_code, name)
+VALUES
+    ('BLZ', 'Belize'),
+    ('BMU', 'Bermuda'),
+    ('CPV', 'Cape Verde'),
+    ('CYM', 'Cayman Islands'),
+    ('CAF', 'Central African Republic'),
+    ('TCD', 'Chad'),
+    ('COG', 'Congo'),
+    ('CIV', 'Côte d''Ivoire'),
+    ('DJI', 'Djibouti'),
+    ('GNQ', 'Equatorial Guinea'),
+    ('YUG', 'Federal Republic of Yugoslavia'),
+    ('GUF', 'French Guiana'),
+    ('PYF', 'French Polynesia'),
+    ('GMB', 'Gambia'),
+    ('GIN', 'Guinea'),
+    ('GNB', 'Guinea-Bissau'),
+    ('VAT', 'Holy See (Vatican City State)'),
+    ('IMN', 'Isle Of Man'),
+    ('KOR', 'Korea'),
+    ('MKD', 'Republic of Macedonia'),
+    ('LSO', 'Lesotho'),
+    ('LBR', 'Liberia'),
+    ('MAC', 'Macao'),
+    ('PSE', 'Occupied Palestinian Territory'),
+    ('PLW', 'Palau'),
+    ('PNG', 'Papua New Guinea'),
+    ('MKD', 'Republic of North Macedonia'),
+    ('LCA', 'Saint Lucia'),
+    ('VCT', 'Saint Vincent and the Grenadines'),
+    ('WSM', 'Samoa'),
+    ('SUR', 'Suriname'),
+    ('SJM', 'Svalbard and Jan Mayen'),
+    ('SWZ', 'Swaziland'),
+    ('COD', 'The Democratic Republic Of Congo'),
+    ('TLS', 'Timor-Leste'),
+    ('VIR', 'U.S. Virgin Islands'),
+    ('VUT', 'Vanuatu'),
+    ('MMR', 'Myanmar (Burma)')
+ON CONFLICT (iso_code, name) DO NOTHING;
+
+--GET COUNTRIES IN SEPARATE ROWS AND WITHOUT WRONG DATA
 WITH omdb_country AS (
 	SELECT tconst, unnest(string_to_array(country, ', ')) as country
 	FROM original.omdb_data o
 	WHERE o.country !='N/A'
 		AND o.country != ''
 		AND o.country IS NOT NULL),
+--MERGING WITH COUNTRIES
 country_merge AS (
-	SELECT tconst, country
+
+	SELECT o.tconst, o.country, c.name, c.iso_code, c.country_id
 	FROM omdb_country o
 	JOIN country c ON o.country = c.name),
+--GETTING UNMATCHING COUNTRIES AND THERI IDS
+--CONVERTING NAMES TO THE CORRECT SO THEY MATCH COUNTRY TABLE
 other_countries AS (
-    SELECT o.country
-    FROM omdb_country o
-    LEFT JOIN country_merge cm ON o.tconst = cm.tconst AND o.country = cm.country
-    WHERE cm.country IS NULL)
+  SELECT o.tconst, 
+		CASE  
+			WHEN o.country = 'USA' THEN 'United States'
+			WHEN o.country = 'Côte d&#x27;Ivoire' THEN 'Côte d''Ivoire'
+			WHEN o.country = 'UK' THEN 'United Kingdom'
+			WHEN o.country = 'Vatican' THEN 'Holy See (Vatican City State)'
+			END AS country
+  FROM omdb_country o
+  LEFT JOIN country_merge cm ON o.tconst = cm.tconst AND o.country = cm.country
+  WHERE cm.country IS NULL),
+--MERGING FIXED COUNTRIES WITH country_id form country TABLE
+other_countries_merge AS (
+	SELECT o.tconst, o.country, c.name, c.iso_code, c.country_id
+	FROM other_countries o
+	JOIN country c ON o.country = c.name),
+--FINAL TABLE WHERE I COMBINED BOTH MERGED TABLES
+--THE NUMBER THE OF RECORDS MATCHES THE ONE IN OMDB
+final_table_to_insert AS (
+	SELECT tconst, country_id, country
+	FROM country_merge cm
+	FULL JOIN other_countries_merge ocm USING (tconst, country_id, country) )
 
-*/
+--INSERTING THE VAUES
+INSERT INTO media_production_country(media_id, country_id)
+SELECT m.media_id, f.country_id
+FROM final_table_to_insert f
+LEFT JOIN media m ON f.tconst = m.imdb_id
+WHERE m.media_id IS NOT NULL
+ORDER BY country;
+
+
+-- ______________///ADDITIONAL THOUGHTS AND COMMENTS\\\_______________
+--********************************************************************
+--____________________________________________________________________
 
 --PROMOTIONAL MEDIA
 
