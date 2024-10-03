@@ -150,13 +150,12 @@ END $$;
 -- D7
 CREATE OR REPLACE FUNCTION calculate_name_rating() RETURNS VOID AS $$
 BEGIN
-    -- Update the name_rating for all persons in a single query
     UPDATE person
     SET name_rating = sub.weighted_rating
     FROM (
         SELECT
             p.person_id,
-            -- Use NULLIF to prevent division by zero
+            -- NOTE: Here we use NULLIF to prevent division by zero.
             SUM(CAST(sc.value AS DECIMAL) * sc.vote_count) / NULLIF(SUM(sc.vote_count), 0) AS weighted_rating
         FROM person p
         LEFT JOIN cast_member cm ON p.person_id = cm.person_id
