@@ -181,3 +181,33 @@ language plpgsql;
 
 --TEST
 SELECT * FROM structured_string_search_name('Jennifer',1);
+
+
+-- D10 Frequent person words
+-- Copy the 'wi' table from the 'original' schema to the 'public' schema
+CREATE TABLE public.wi AS
+SELECT *
+FROM original.wi;
+
+-- Create the function 'person_words' to retrieve words associated with a person's titles
+CREATE OR REPLACE FUNCTION person_words(
+    p_person_name VARCHAR,
+    p_max_length INT DEFAULT 10  -- Optional parameter to limit the number of results returned
+)
+RETURNS TABLE (word TEXT, frequency INT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT wi.word, COUNT(*)::INTEGER AS frequency 
+    FROM wi 
+    JOIN media m ON wi.tconst = m.imdb_id
+    JOIN cast_member cm ON m.media_id = cm.media_id
+    JOIN person p ON cm.person_id = p.person_id
+    WHERE p.name ILIKE '%' || TRIM(p_person_name) || '%'
+    GROUP BY wi.word
+    ORDER BY frequency DESC
+    LIMIT p_max_length;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D10 TEST
+SELECT * FROM person_words('Jennifer Aniston', 8);
