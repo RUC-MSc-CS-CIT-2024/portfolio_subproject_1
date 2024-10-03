@@ -27,7 +27,7 @@ CREATE OR REPLACE FUNCTION structured_string_search (
   p_title VARCHAR(100), 
   p_plot VARCHAR(100), 
   p_character VARCHAR(100), 
-  p_person VARCHAR(100), 
+  p_person VARCHAR(100),
   p_user_id INTEGER
 )
 RETURNS TABLE (media_id INTEGER, title TEXT)
@@ -36,7 +36,7 @@ BEGIN
   -- SEARCH HISTORY
   INSERT INTO search_history (user_id, "type", query)
   VALUES (p_user_id, 'structured_string_search', 
-          FORMAT('title: %s, plot: %s, character: %s, person: %s', p_title, p_plot, p_character, p_person));
+          FORMAT('title: "%s", plot: "%s", character: "%s", person: "%s"', p_title, p_plot, p_character, p_person));
 
   -- RESULT
   RETURN QUERY
@@ -288,3 +288,78 @@ END;
 $$ LANGUAGE plpgsql;
 -- Test with a sample actor ID
 SELECT * FROM list_co_actors_by_popularity(64);
+
+
+-- D10 Frequent person words
+-- Copy the 'wi' table from the 'original' schema to the 'public' schema
+CREATE TABLE public.wi AS
+SELECT *
+FROM original.wi;
+
+-- Create the function 'person_words' to retrieve words associated with a person's titles
+CREATE OR REPLACE FUNCTION person_words(
+    p_person_name VARCHAR,
+    p_max_length INT DEFAULT 10  -- Optional parameter to limit the number of results returned
+)
+RETURNS TABLE (word TEXT, frequency INT) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT wi.word, COUNT(*)::INTEGER AS frequency 
+    FROM wi 
+    JOIN media m ON wi.tconst = m.imdb_id
+    JOIN cast_member cm ON m.media_id = cm.media_id
+    JOIN person p ON cm.person_id = p.person_id
+    WHERE p.name ILIKE '%' || TRIM(p_person_name) || '%'
+    GROUP BY wi.word
+    ORDER BY frequency DESC
+    LIMIT p_max_length;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D10 TEST
+SELECT * FROM person_words('Jennifer Aniston', 8);
+
+
+-- D11 Function to find titles to match the exact-match querying 
+CREATE OR REPLACE FUNCTION exact_match_titles(
+    keywords TEXT[]
+)
+RETURNS TABLE (media_id INTEGER) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT m.media_id
+    FROM media m
+    JOIN (
+        SELECT tconst
+        FROM wi
+        WHERE word = ANY(keywords)
+        GROUP BY tconst
+        HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
+    ) w ON m.imdb_id = w.tconst;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D11 TEST 
+SELECT * FROM exact_match_titles(ARRAY['apple','mads','mikkelsen']);
+SELECT title FROM release WHERE media_id=47460;
+
+
+-- D12 Function to best match querying, ranking and ordering the media.
+CREATE OR REPLACE FUNCTION best_match_titles(
+    keywords TEXT[]
+)
+RETURNS TABLE (media_id INTEGER, match_count INTEGER) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT m.media_id, COUNT(DISTINCT wi.word)::INTEGER AS match_count
+    FROM media m
+    JOIN wi ON m.imdb_id = wi.tconst
+    WHERE wi.word = ANY(keywords)
+    GROUP BY m.media_id
+    ORDER BY match_count DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D12 TEST
+SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
+SELECT title FROM release WHERE media_id=47460;
