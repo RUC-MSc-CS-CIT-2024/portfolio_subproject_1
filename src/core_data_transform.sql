@@ -251,7 +251,32 @@ INSERT INTO country (imdb_country_code, iso_code, "name") VALUES
 ('YUCS', 'YUG', 'Yugoslavia'),
 ('ZA', 'ZAF', 'South Africa'),
 ('ZM', 'ZMB', 'Zambia'),
-('ZW', 'ZWE', 'Zimbabwe');
+('ZW', 'ZWE', 'Zimbabwe'),
+(NULL, 'VAT', 'Holy See (Vatican City State)'),
+(NULL, 'LSO', 'Lesotho'),
+(NULL, 'LBR', 'Liberia'),
+(NULL, 'PLW', 'Palau'),
+(NULL, 'PNG', 'Papua New Guinea'), 
+(NULL, 'LCA', 'Saint Lucia'),
+(NULL, 'VCT', 'Saint Vincent and the Grenadines'),
+(NULL, 'WSM', 'Samoa'),
+(NULL, 'SUR', 'Suriname'),
+(NULL, 'SJM', 'Svalbard and Jan Mayen'),   
+(NULL, 'TLS', 'Timor-Leste'),
+(NULL, 'VUT', 'Vanuatu'),
+(NULL, 'BLZ', 'Belize'),
+(NULL, 'BMU', 'Bermuda'),
+(NULL, 'CPV', 'Cape Verde'),
+(NULL, 'CYM', 'Cayman Islands'),
+(NULL, 'CAF', 'Central African Republic'),
+(NULL, 'DJI', 'Djibouti'),
+(NULL, 'GNQ', 'Equatorial Guinea'),
+(NULL, 'GIN', 'Guinea'),
+(NULL, 'GMB', 'Gambia'),
+(NULL, 'GNB', 'Guinea-Bissau'),
+(NULL, 'GUF', 'French Guiana'),
+(NULL, 'PYF', 'French Polynesia'),
+(NULL, 'TCD', 'Chad');
 
 -- Languages
 
