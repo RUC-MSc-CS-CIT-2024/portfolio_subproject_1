@@ -27,7 +27,7 @@ CREATE OR REPLACE FUNCTION structured_string_search (
   p_title VARCHAR(100), 
   p_plot VARCHAR(100), 
   p_character VARCHAR(100), 
-  p_person VARCHAR(100), 
+  p_person VARCHAR(100),
   p_user_id INTEGER
 )
 RETURNS TABLE (media_id INTEGER, title TEXT)
@@ -36,7 +36,7 @@ BEGIN
   -- SEARCH HISTORY
   INSERT INTO search_history (user_id, "type", query)
   VALUES (p_user_id, 'structured_string_search', 
-          FORMAT('title: %s, plot: %s, character: %s, person: %s', p_title, p_plot, p_character, p_person));
+          FORMAT('title: "%s", plot: "%s", character: "%s", person: "%s"', p_title, p_plot, p_character, p_person));
 
   -- RESULT
   RETURN QUERY
