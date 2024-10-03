@@ -181,3 +181,52 @@ language plpgsql;
 
 --TEST
 SELECT * FROM structured_string_search_name('Jennifer',1);
+
+-- D6 View to simplify queries for actors and their associated media
+CREATE OR REPLACE VIEW actor_media_view AS
+SELECT 
+    p.person_id,
+    p."name" AS actor_name,
+    p.imdb_id,
+    cm.media_id,
+    cm."role",
+    cm."character"
+FROM 
+    person p
+JOIN 
+    cast_member cm ON p.person_id = cm.person_id;
+
+
+-- D6 Function to find the most frequent co-actors of a given actor
+CREATE OR REPLACE FUNCTION get_frequent_coplaying_actors(actor_name_input VARCHAR)
+RETURNS TABLE (
+    coactor_name VARCHAR,
+    coactor_imdb_id VARCHAR,
+    frequency INT
+)
+AS
+$$
+BEGIN
+		-- Query to return the frequent co-stars
+    RETURN QUERY
+    SELECT 
+        cm2.actor_name AS coactor_name,
+        cm2.imdb_id AS coactor_imdb_id,
+        COUNT(DISTINCT cm1.media_id)::INTEGER AS frequency
+    FROM 
+        actor_media_view cm1
+    JOIN 
+        actor_media_view cm2 ON cm1.media_id = cm2.media_id
+    WHERE 
+        cm1.actor_name = actor_name_input
+        AND cm1.person_id != cm2.person_id
+        AND cm2.actor_name != actor_name_input
+    GROUP BY 
+        cm2.actor_name, cm2.imdb_id
+    ORDER BY 
+        frequency DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D6 TEST
+SELECT * FROM get_frequent_coplaying_actors('Jennifer Aniston');
