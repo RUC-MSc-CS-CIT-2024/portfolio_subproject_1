@@ -1,5 +1,4 @@
 --D2 SIMPLE SEARCH
-
 CREATE OR REPLACE FUNCTION simple_search
   (query varchar(100), user_id integer)
 RETURNS TABLE (media_id INTEGER, title TEXT)
@@ -119,7 +118,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 -- D3 TEST
 -- Insert Sample Data
 INSERT INTO media (type, plot, runtime, imdb_id) 
@@ -158,10 +156,8 @@ RETURNS TABLE (person_id INTEGER, "name" VARCHAR(150), filmography json)
 AS $$
 BEGIN
 
-
     INSERT INTO search_history (user_id, type, query)
     VALUES (user_id, 'structured_string_search_name', query);
-
 
     RETURN QUERY
     SELECT p.person_id, 
@@ -181,6 +177,92 @@ language plpgsql;
 
 --TEST
 SELECT * FROM structured_string_search_name('Jennifer',1);
+
+-- D6 View to simplify queries for actors and their associated media
+CREATE OR REPLACE VIEW actor_media_view AS
+SELECT 
+    p.person_id,
+    p."name" AS actor_name,
+    p.imdb_id,
+    cm.media_id,
+    cm."role",
+    cm."character"
+FROM 
+    person p
+JOIN 
+    cast_member cm ON p.person_id = cm.person_id;
+
+-- D6 Function to find the most frequent co-actors of a given actor
+CREATE OR REPLACE FUNCTION get_frequent_coplaying_actors(actor_name_input VARCHAR)
+RETURNS TABLE (
+    coactor_name VARCHAR,
+    coactor_imdb_id VARCHAR,
+    frequency INT
+)
+AS
+$$
+BEGIN
+		-- Query to return the frequent co-stars
+    RETURN QUERY
+    SELECT 
+        cm2.actor_name AS coactor_name,
+        cm2.imdb_id AS coactor_imdb_id,
+        COUNT(DISTINCT cm1.media_id)::INTEGER AS frequency
+    FROM 
+        actor_media_view cm1
+    JOIN 
+        actor_media_view cm2 ON cm1.media_id = cm2.media_id
+    WHERE 
+        cm1.actor_name = actor_name_input
+        AND cm1.person_id != cm2.person_id
+        AND cm2.actor_name != actor_name_input
+    GROUP BY 
+        cm2.actor_name, cm2.imdb_id
+    ORDER BY 
+        frequency DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D6 TEST
+SELECT * FROM get_frequent_coplaying_actors('Jennifer Aniston');
+
+-- D8 List Actors by Popularity
+CREATE OR REPLACE FUNCTION list_actors_by_popularity(p_media_id INT)
+RETURNS TABLE (actor_id INT, actor_name TEXT, actor_rating DECIMAL(3, 2)) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.person_id, 
+           p."name"::TEXT,
+           p.name_rating
+    FROM person p
+    INNER JOIN cast_member cm ON p.person_id = cm.person_id
+    WHERE cm.media_id = p_media_id
+    ORDER BY p.name_rating DESC;
+END;
+$$ LANGUAGE plpgsql;
+-- Test with a sample media ID
+SELECT * FROM list_actors_by_popularity(36);
+
+-- D8 List Co-Actors by Popularity for a Given Actor
+CREATE OR REPLACE FUNCTION list_co_actors_by_popularity(p_actor_id INT)
+RETURNS TABLE (co_actor_id INT, co_actor_name TEXT, co_actor_rating DECIMAL(6, 2)) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT DISTINCT p2.person_id, 
+                    p2."name"::TEXT,
+                    p2.name_rating
+    FROM cast_member cm1
+    INNER JOIN cast_member cm2 ON cm1.media_id = cm2.media_id  
+    INNER JOIN person p2 ON cm2.person_id = p2.person_id
+    WHERE cm1.person_id = p_actor_id 
+      AND cm2.person_id != p_actor_id
+      AND p2.name_rating IS NOT NULL
+    ORDER BY p2.name_rating DESC;
+END;
+$$ LANGUAGE plpgsql;
+-- Test with a sample actor ID
+SELECT * FROM list_co_actors_by_popularity(64);
+
 
 
 -- D10 Frequent person words
