@@ -1,5 +1,4 @@
 --D2 SIMPLE SEARCH
-
 CREATE OR REPLACE FUNCTION simple_search
   (query varchar(100), user_id integer)
 RETURNS TABLE (media_id INTEGER, title TEXT)
@@ -119,7 +118,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 -- D3 TEST
 -- Insert Sample Data
 INSERT INTO media (type, plot, runtime, imdb_id) 
@@ -158,10 +156,8 @@ RETURNS TABLE (person_id INTEGER, "name" VARCHAR(150), filmography json)
 AS $$
 BEGIN
 
-
     INSERT INTO search_history (user_id, type, query)
     VALUES (user_id, 'structured_string_search_name', query);
-
 
     RETURN QUERY
     SELECT p.person_id, 
@@ -196,7 +192,6 @@ FROM
 JOIN 
     cast_member cm ON p.person_id = cm.person_id;
 
-
 -- D6 Function to find the most frequent co-actors of a given actor
 CREATE OR REPLACE FUNCTION get_frequent_coplaying_actors(actor_name_input VARCHAR)
 RETURNS TABLE (
@@ -230,3 +225,40 @@ $$ LANGUAGE plpgsql;
 
 -- D6 TEST
 SELECT * FROM get_frequent_coplaying_actors('Jennifer Aniston');
+
+-- D8 List Actors by Popularity
+CREATE OR REPLACE FUNCTION list_actors_by_popularity(p_media_id INT)
+RETURNS TABLE (actor_id INT, actor_name TEXT, actor_rating DECIMAL(3, 2)) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.person_id, 
+           p."name"::TEXT,
+           p.name_rating
+    FROM person p
+    INNER JOIN cast_member cm ON p.person_id = cm.person_id
+    WHERE cm.media_id = p_media_id
+    ORDER BY p.name_rating DESC;
+END;
+$$ LANGUAGE plpgsql;
+-- Test with a sample media ID
+SELECT * FROM list_actors_by_popularity(36);
+
+-- D8 List Co-Actors by Popularity for a Given Actor
+CREATE OR REPLACE FUNCTION list_co_actors_by_popularity(p_actor_id INT)
+RETURNS TABLE (co_actor_id INT, co_actor_name TEXT, co_actor_rating DECIMAL(6, 2)) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT DISTINCT p2.person_id, 
+                    p2."name"::TEXT,
+                    p2.name_rating
+    FROM cast_member cm1
+    INNER JOIN cast_member cm2 ON cm1.media_id = cm2.media_id  
+    INNER JOIN person p2 ON cm2.person_id = p2.person_id
+    WHERE cm1.person_id = p_actor_id 
+      AND cm2.person_id != p_actor_id
+      AND p2.name_rating IS NOT NULL
+    ORDER BY p2.name_rating DESC;
+END;
+$$ LANGUAGE plpgsql;
+-- Test with a sample actor ID
+SELECT * FROM list_co_actors_by_popularity(64);
