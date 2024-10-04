@@ -89,6 +89,50 @@ SELECT login_user('ManseChampanse', 'SuperManse123!');
 SELECT login_user('ManseChampanse', 'WrongPassword!');
 
 
+-- Basic User Password Update Function with password validation.
+CREATE OR REPLACE FUNCTION update_user_password(p_user_id INT, p_new_password VARCHAR)
+RETURNS VOID AS $$
+DECLARE
+    v_min_length INT := 8;
+    v_has_upper BOOLEAN := FALSE;
+    v_has_lower BOOLEAN := FALSE;
+    v_has_digit BOOLEAN := FALSE;
+    v_has_special BOOLEAN := FALSE;
+BEGIN
+    IF LENGTH(p_new_password) < v_min_length THEN
+        RAISE EXCEPTION 'Password must be at least % characters long', v_min_length;
+    END IF;
+
+    v_has_upper := p_new_password ~ '[A-Z]';
+    v_has_lower := p_new_password ~ '[a-z]';
+    v_has_digit := p_new_password ~ '[0-9]';
+    v_has_special := p_new_password ~ '[^a-zA-Z0-9]';
+
+    IF NOT v_has_upper THEN
+        RAISE EXCEPTION 'Password must contain at least one uppercase letter';
+    ELSIF NOT v_has_lower THEN
+        RAISE EXCEPTION 'Password must contain at least one lowercase letter';
+    ELSIF NOT v_has_digit THEN
+        RAISE EXCEPTION 'Password must contain at least one digit';
+    ELSIF NOT v_has_special THEN
+        RAISE EXCEPTION 'Password must contain at least one special character';
+    END IF;
+
+    -- Update the password securely with crypt
+    UPDATE "user"
+    SET password = crypt(p_new_password, gen_salt('bf'))
+    WHERE user_id = p_user_id;
+    
+    -- Check if update was successful
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'User ID % not found', p_user_id;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the update_user_password function with a valid user ID and password
+SELECT update_user_password(1, 'NewStrongPass1!');
+
 
 --D2 SIMPLE SEARCH
 CREATE OR REPLACE FUNCTION simple_search
