@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION create_user(p_username VARCHAR, p_password VARCHAR, p
 RETURNS VOID AS $$
 DECLARE
     -- Validation variables
-    v_min_length INT := 8; -- Minimum password length
+    v_min_length INT := 8;
     v_has_upper BOOLEAN := FALSE;
     v_has_lower BOOLEAN := FALSE;
     v_has_digit BOOLEAN := FALSE;
@@ -132,6 +132,42 @@ $$ LANGUAGE plpgsql;
 
 -- Test the update_user_password function with a valid user ID and password
 SELECT update_user_password(1, 'NewStrongPass1!');
+
+-- Basic User Email Update Function with email validation.
+CREATE OR REPLACE FUNCTION update_user_credentials(p_user_id INT, p_new_username VARCHAR DEFAULT NULL, p_new_email VARCHAR DEFAULT NULL)
+RETURNS VOID AS $$
+BEGIN
+    IF p_new_username IS NOT NULL THEN
+        IF EXISTS (SELECT 1 FROM "user" WHERE username = p_new_username AND user_id != p_user_id) THEN
+            RAISE EXCEPTION 'Username % already exists', p_new_username;
+        ELSE
+            UPDATE "user" SET username = p_new_username WHERE user_id = p_user_id;
+        END IF;
+    END IF;
+
+    IF p_new_email IS NOT NULL THEN
+        IF EXISTS (SELECT 1 FROM "user" WHERE email = p_new_email AND user_id != p_user_id) THEN
+            RAISE EXCEPTION 'Email % already exists', p_new_email;
+        ELSE
+            UPDATE "user" SET email = p_new_email WHERE user_id = p_user_id;
+        END IF;
+    END IF;
+
+    -- Check if any update was applied
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'User ID % not found or no changes applied', p_user_id;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Update only the username
+SELECT update_user_credentials(1, 'NewUsername', NULL);
+
+-- Update only the email
+SELECT update_user_credentials(1, NULL, 'newemail@example.com');
+
+-- Update both username and email
+SELECT update_user_credentials(1, 'AnotherUsername', 'anotheremail@example.com');
 
 
 --D2 SIMPLE SEARCH
