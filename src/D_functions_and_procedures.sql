@@ -1,3 +1,6 @@
+-- This script contains all the functions and procedures that are part of the project.
+-- Enable the pgcrypto extension
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Indexing
 
 -- User-Related Foreign Keys
@@ -38,6 +41,316 @@ CREATE INDEX idx_wi_words ON wi(word);
 CREATE INDEX idx_media_production_country_media_country ON media_production_country(media_id, country_id);
 CREATE INDEX idx_media_country ON media_production_country(country_id, media_id);
 CREATE INDEX idx_media_in_collection_collection_media ON media_in_collection(collection_id, media_id);
+
+
+-- D1 Basic Framework Functionality.
+
+-- Basic User Signup Function that includes password validation.
+CREATE OR REPLACE FUNCTION create_user(p_username VARCHAR, p_password VARCHAR, p_email VARCHAR)
+RETURNS VOID AS $$
+DECLARE
+    -- Validation variables
+    v_min_length INT := 8;
+    v_has_upper BOOLEAN := FALSE;
+    v_has_lower BOOLEAN := FALSE;
+    v_has_digit BOOLEAN := FALSE;
+    v_has_special BOOLEAN := FALSE;
+BEGIN
+    -- Check if the username already exists
+    IF EXISTS (SELECT 1 FROM "user" WHERE username = p_username) THEN
+        RAISE EXCEPTION 'Username % already exists', p_username;
+
+    -- Check if the email already exists
+    ELSIF EXISTS (SELECT 1 FROM "user" WHERE email = p_email) THEN
+        RAISE EXCEPTION 'Email % already exists', p_email;
+
+    ELSE
+        IF LENGTH(p_password) < v_min_length THEN
+            RAISE EXCEPTION 'Password must be at least % characters long', v_min_length;
+        END IF;
+
+        -- Validate password complexity
+        v_has_upper := p_password ~ '[A-Z]';
+        v_has_lower := p_password ~ '[a-z]';
+        v_has_digit := p_password ~ '[0-9]';
+        v_has_special := p_password ~ '[^a-zA-Z0-9]';
+
+        IF NOT v_has_upper THEN
+            RAISE EXCEPTION 'Password must contain at least one uppercase letter';
+        ELSIF NOT v_has_lower THEN
+            RAISE EXCEPTION 'Password must contain at least one lowercase letter';
+        ELSIF NOT v_has_digit THEN
+            RAISE EXCEPTION 'Password must contain at least one digit';
+        ELSIF NOT v_has_special THEN
+            RAISE EXCEPTION 'Password must contain at least one special character';
+        END IF;
+
+        -- Insert the new user with a hashed password using crypt
+        INSERT INTO "user" (username, password, email)
+        VALUES (p_username, crypt(p_password, gen_salt('bf')), p_email);
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Execute the create_user function directly
+SELECT create_user('ManseChampanse', 'SuperManse123!', 'ManseChampanse@hotmail.com');
+-- Verify that the user has been created
+SELECT * FROM "user" WHERE username = 'ManseChampanse';
+
+
+-- Basic User Login Function with hashing and validation.
+CREATE OR REPLACE FUNCTION login_user(p_username_or_email VARCHAR, p_password VARCHAR)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_stored_password VARCHAR;
+    v_user_id INT;
+BEGIN
+    SELECT password, user_id
+    INTO v_stored_password, v_user_id
+    FROM "user"
+    WHERE username = p_username_or_email OR email = p_username_or_email;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Invalid username/email or password';
+    END IF;
+
+    -- Validate the provided password with the stored hashed password
+    IF crypt(p_password, v_stored_password) = v_stored_password THEN
+        -- Password matches, login successful
+        RETURN TRUE;
+    ELSE
+        -- Password does not match
+        RAISE EXCEPTION 'Invalid username/email or password';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+-- Test the login_user function with correct credentials
+SELECT login_user('ManseChampanse', 'SuperManse123!');
+-- Test the login_user function with an incorrect password
+SELECT login_user('ManseChampanse', 'WrongPassword!');
+
+
+-- Basic User Password Update Function with password validation.
+CREATE OR REPLACE FUNCTION update_user_password(p_user_id INT, p_new_password VARCHAR)
+RETURNS VOID AS $$
+DECLARE
+    v_min_length INT := 8;
+    v_has_upper BOOLEAN := FALSE;
+    v_has_lower BOOLEAN := FALSE;
+    v_has_digit BOOLEAN := FALSE;
+    v_has_special BOOLEAN := FALSE;
+BEGIN
+    IF LENGTH(p_new_password) < v_min_length THEN
+        RAISE EXCEPTION 'Password must be at least % characters long', v_min_length;
+    END IF;
+
+    v_has_upper := p_new_password ~ '[A-Z]';
+    v_has_lower := p_new_password ~ '[a-z]';
+    v_has_digit := p_new_password ~ '[0-9]';
+    v_has_special := p_new_password ~ '[^a-zA-Z0-9]';
+
+    IF NOT v_has_upper THEN
+        RAISE EXCEPTION 'Password must contain at least one uppercase letter';
+    ELSIF NOT v_has_lower THEN
+        RAISE EXCEPTION 'Password must contain at least one lowercase letter';
+    ELSIF NOT v_has_digit THEN
+        RAISE EXCEPTION 'Password must contain at least one digit';
+    ELSIF NOT v_has_special THEN
+        RAISE EXCEPTION 'Password must contain at least one special character';
+    END IF;
+
+    -- Update the password securely with crypt
+    UPDATE "user"
+    SET password = crypt(p_new_password, gen_salt('bf'))
+    WHERE user_id = p_user_id;
+    
+    -- Check if update was successful
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'User ID % not found', p_user_id;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the update_user_password function with a valid user ID and password
+SELECT update_user_password(1, 'NewStrongPass1!');
+
+-- Basic User Email Update Function with email validation.
+CREATE OR REPLACE FUNCTION update_user_credentials(p_user_id INT, p_new_username VARCHAR DEFAULT NULL, p_new_email VARCHAR DEFAULT NULL)
+RETURNS VOID AS $$
+BEGIN
+    IF p_new_username IS NOT NULL THEN
+        IF EXISTS (SELECT 1 FROM "user" WHERE username = p_new_username AND user_id != p_user_id) THEN
+            RAISE EXCEPTION 'Username % already exists', p_new_username;
+        ELSE
+            UPDATE "user" SET username = p_new_username WHERE user_id = p_user_id;
+        END IF;
+    END IF;
+
+    IF p_new_email IS NOT NULL THEN
+        IF EXISTS (SELECT 1 FROM "user" WHERE email = p_new_email AND user_id != p_user_id) THEN
+            RAISE EXCEPTION 'Email % already exists', p_new_email;
+        ELSE
+            UPDATE "user" SET email = p_new_email WHERE user_id = p_user_id;
+        END IF;
+    END IF;
+
+    -- Check if any update was applied
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'User ID % not found or no changes applied', p_user_id;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Update only the username
+SELECT update_user_credentials(1, 'NewUsername', NULL);
+
+-- Update only the email
+SELECT update_user_credentials(1, NULL, 'newemail@example.com');
+
+-- Update both username and email
+SELECT update_user_credentials(1, 'AnotherUsername', 'anotheremail@example.com');
+
+-- Basic User Deletion Function with validation.
+CREATE OR REPLACE FUNCTION delete_user(p_user_id INT)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the user exists before deletion
+    IF EXISTS (SELECT 1 FROM "user" WHERE user_id = p_user_id) THEN
+        -- Delete the user (related records will be deleted automatically via ON DELETE CASCADE)
+        DELETE FROM "user" WHERE user_id = p_user_id;
+    ELSE
+        RAISE EXCEPTION 'User ID % not found', p_user_id;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the delete_user function with an existing user ID
+SELECT delete_user(1);
+
+-- followed function
+CREATE OR REPLACE FUNCTION follow_person(p_follower_id INT, p_person_id INT)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the person exists in the person table
+    IF NOT EXISTS (
+        SELECT 1 FROM person WHERE person_id = p_person_id
+    ) THEN
+        RAISE EXCEPTION 'Person with ID % does not exist', p_person_id;
+    END IF;
+
+    -- Check if the user is already following the person
+    IF EXISTS (
+        SELECT 1 FROM "following" 
+        WHERE user_id = p_follower_id AND person_id = p_person_id
+    ) THEN
+        RAISE EXCEPTION 'User % is already following person %', p_follower_id, p_person_id;
+    END IF;
+
+    INSERT INTO "following" (user_id, person_id, followed_since)
+    VALUES (p_follower_id, p_person_id, CURRENT_TIMESTAMP);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the follow_person function with valid user and person IDs
+SELECT follow_person(1, 1056); 
+
+-- unfollowed function
+CREATE OR REPLACE FUNCTION unfollow_person(p_follower_id INT, p_person_id INT)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the user is currently following the person
+    IF NOT EXISTS (
+        SELECT 1 FROM "following"
+        WHERE user_id = p_follower_id AND person_id = p_person_id
+    ) THEN
+        RAISE EXCEPTION 'User % is not following person %', p_follower_id, p_person_id;
+    END IF;
+
+    -- Remove the follow record
+    DELETE FROM "following"
+    WHERE user_id = p_follower_id AND person_id = p_person_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the unfollow_person function with valid user and person IDs
+SELECT unfollow_person(1, 1056);
+
+-- Bookmark media function
+CREATE OR REPLACE FUNCTION bookmark_media(p_user_id INT, p_media_id INT, p_note TEXT DEFAULT NULL)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the user has already bookmarked this media
+    IF EXISTS (
+        SELECT 1 FROM bookmark 
+        WHERE user_id = p_user_id AND media_id = p_media_id
+    ) THEN
+        RAISE EXCEPTION 'User % has already bookmarked media %', p_user_id, p_media_id;
+    END IF;
+
+    INSERT INTO bookmark (user_id, media_id, note)
+    VALUES (p_user_id, p_media_id, p_note);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the bookmark_media function with valid user and media IDs
+SELECT bookmark_media(1, 1023, 'Great Series, must watch later!');
+SELECT bookmark_media(1, 3299, 'Meh! Was decent I suppose...');
+
+-- Move bookmark to completed function
+CREATE OR REPLACE FUNCTION move_bookmark_to_completed(
+    p_user_id INT,
+    p_media_id INT,
+    p_rewatchability INT,
+    p_note TEXT DEFAULT NULL
+)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the media is bookmarked by the user
+    IF NOT EXISTS (
+        SELECT 1 FROM bookmark
+        WHERE user_id = p_user_id AND media_id = p_media_id
+    ) THEN
+        RAISE EXCEPTION 'Media % is not bookmarked by user %', p_media_id, p_user_id;
+    END IF;
+
+    -- Check for valid rewatchability score
+    IF p_rewatchability < 1 OR p_rewatchability > 5 THEN
+        RAISE EXCEPTION 'Rewatchability must be between 1 and 5';
+    END IF;
+
+    -- Move the media from bookmark to completed
+    INSERT INTO completed (user_id, media_id, completed_date, rewatchability, note)
+    VALUES (p_user_id, p_media_id, CURRENT_DATE, p_rewatchability, p_note);
+
+    -- Remove the media from bookmarks
+    DELETE FROM bookmark
+    WHERE user_id = p_user_id AND media_id = p_media_id;
+END;
+$$ LANGUAGE plpgsql;
+-- Test the move_bookmark_to_completed function with valid user and media IDs
+SELECT move_bookmark_to_completed(1, 1023, 5, 'Amazing movie!');
+
+
+
+-- unbookmark media whithout completing it
+CREATE OR REPLACE FUNCTION unbookmark_media(p_user_id INT, p_media_id INT)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the media is bookmarked by the user
+    IF NOT EXISTS (
+        SELECT 1 FROM bookmark
+        WHERE user_id = p_user_id AND media_id = p_media_id
+    ) THEN
+        RAISE EXCEPTION 'Media % is not bookmarked by user %', p_media_id, p_user_id;
+    END IF;
+
+    -- Remove the bookmark
+    DELETE FROM bookmark
+    WHERE user_id = p_user_id AND media_id = p_media_id;
+END;
+$$ LANGUAGE plpgsql;
+-- Test the unbookmark_media function with valid user and media IDs
+SELECT unbookmark_media(1, 3299);
 
 --D2 SIMPLE SEARCH
 CREATE OR REPLACE FUNCTION simple_search

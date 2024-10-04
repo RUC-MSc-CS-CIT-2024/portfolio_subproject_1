@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS bookmark CASCADE;
 DROP TABLE IF EXISTS completed CASCADE;
 DROP TABLE IF EXISTS plan_to_watch CASCADE;
 DROP TABLE IF EXISTS user_score CASCADE;
+DROP TABLE IF EXISTS "following" CASCADE;
 
 CREATE TABLE "user" (
     user_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -42,4 +43,11 @@ CREATE TABLE user_score (
     score_value INTEGER CHECK (score_value >= 1 AND score_value <= 10),
     review_text TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE "following" (
+    following_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_id INTEGER REFERENCES "user"(user_id) ON DELETE CASCADE,
+    person_id INTEGER,
+    followed_since TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
