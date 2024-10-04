@@ -1,3 +1,42 @@
+-- Indexing
+
+-- User-Related Foreign Keys
+CREATE INDEX idx_search_history_user_id ON search_history(user_id);
+CREATE INDEX idx_bookmark_user_id ON bookmark(user_id);
+CREATE INDEX idx_completed_user_id ON completed(user_id);
+CREATE INDEX idx_user_score_user_id ON user_score(user_id);
+
+-- Media-Related Foreign Keys
+CREATE INDEX idx_bookmark_media_id ON bookmark(media_id);
+CREATE INDEX idx_completed_media_id ON completed(media_id);
+CREATE INDEX idx_user_score_media_id ON user_score(media_id);
+CREATE INDEX idx_season_media_id ON season(media_id);
+CREATE INDEX idx_episode_media_id ON episode(media_id);
+CREATE INDEX idx_media_genre_media_id ON media_genre(media_id);
+CREATE INDEX idx_media_production_country_media_id ON media_production_country(media_id);
+CREATE INDEX idx_score_media_id ON score(media_id);
+CREATE INDEX idx_media_in_collection_media_id ON media_in_collection(media_id);
+CREATE INDEX idx_related_media_primary_id ON related_media(primary_id);
+CREATE INDEX idx_related_media_related_id ON related_media(related_id);
+
+-- Person-Related Foreign Keys
+CREATE INDEX idx_crew_member_person_id ON crew_member(person_id);
+CREATE INDEX idx_cast_member_person_id ON cast_member(person_id);
+
+-- Commonly Queried Columns
+CREATE INDEX idx_user_username ON "user"(username);
+CREATE INDEX idx_user_email ON "user"(email);
+CREATE INDEX idx_completed_completed_date ON completed(completed_date);
+CREATE INDEX idx_user_score_score_value ON user_score(score_value);
+CREATE INDEX idx_search_history_type ON search_history(type);
+CREATE INDEX idx_media_type ON media(type);
+CREATE INDEX idx_media_in_collection_collection_id ON media_in_collection(collection_id);
+
+-- Composite Indexes
+CREATE INDEX idx_media_production_country_media_country ON media_production_country(media_id, country_id);
+CREATE INDEX idx_media_in_collection_collection_media ON media_in_collection(collection_id, media_id);
+CREATE INDEX idx_media_country ON media_production_country(country_id, media_id);
+
 --D2 SIMPLE SEARCH
 CREATE OR REPLACE FUNCTION simple_search
   (query varchar(100), user_id integer)
