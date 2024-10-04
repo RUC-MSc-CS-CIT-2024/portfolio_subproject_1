@@ -169,6 +169,52 @@ SELECT update_user_credentials(1, NULL, 'newemail@example.com');
 -- Update both username and email
 SELECT update_user_credentials(1, 'AnotherUsername', 'anotheremail@example.com');
 
+-- Basic User Deletion Function with validation.
+CREATE OR REPLACE FUNCTION delete_user(p_user_id INT)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the user exists before deletion
+    IF EXISTS (SELECT 1 FROM "user" WHERE user_id = p_user_id) THEN
+        -- Delete the user (related records will be deleted automatically via ON DELETE CASCADE)
+        DELETE FROM "user" WHERE user_id = p_user_id;
+    ELSE
+        RAISE EXCEPTION 'User ID % not found', p_user_id;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the delete_user function with an existing user ID
+SELECT delete_user(1);
+
+-- followed function
+CREATE OR REPLACE FUNCTION follow_person(p_follower_id INT, p_person_id INT)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the person exists in the person table
+    IF NOT EXISTS (
+        SELECT 1 FROM person WHERE person_id = p_person_id
+    ) THEN
+        RAISE EXCEPTION 'Person with ID % does not exist', p_person_id;
+    END IF;
+
+    -- Check if the user is already following the person
+    IF EXISTS (
+        SELECT 1 FROM "following" 
+        WHERE user_id = p_follower_id AND person_id = p_person_id
+    ) THEN
+        RAISE EXCEPTION 'User % is already following person %', p_follower_id, p_person_id;
+    END IF;
+
+    INSERT INTO "following" (user_id, person_id, followed_since)
+    VALUES (p_follower_id, p_person_id, CURRENT_TIMESTAMP);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the follow_person function with valid user and person IDs
+SELECT follow_person(1, 1056); 
+
+
+
 
 --D2 SIMPLE SEARCH
 CREATE OR REPLACE FUNCTION simple_search
