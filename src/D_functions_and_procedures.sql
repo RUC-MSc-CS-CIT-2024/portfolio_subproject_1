@@ -1,5 +1,6 @@
 -- This script contains all the functions and procedures that are part of the project.
-
+-- Enable the pgcrypto extension
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- D1 Basic Framework Functionality.
 
@@ -23,21 +24,14 @@ BEGIN
         RAISE EXCEPTION 'Email % already exists', p_email;
 
     ELSE
-        -- Check password length
         IF LENGTH(p_password) < v_min_length THEN
             RAISE EXCEPTION 'Password must be at least % characters long', v_min_length;
         END IF;
 
-        -- Check for uppercase letters
+        -- Validate password complexity
         v_has_upper := p_password ~ '[A-Z]';
-
-        -- Check for lowercase letters
         v_has_lower := p_password ~ '[a-z]';
-
-        -- Check for digits
         v_has_digit := p_password ~ '[0-9]';
-
-        -- Check for special characters (non-alphanumeric)
         v_has_special := p_password ~ '[^a-zA-Z0-9]';
 
         IF NOT v_has_upper THEN
@@ -50,13 +44,49 @@ BEGIN
             RAISE EXCEPTION 'Password must contain at least one special character';
         END IF;
 
-        -- Succes!!, insert the new user
+        -- Insert the new user with a hashed password using crypt
         INSERT INTO "user" (username, password, email)
-        VALUES (p_username, p_password, p_email);
+        VALUES (p_username, crypt(p_password, gen_salt('bf')), p_email);
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
+-- Execute the create_user function directly
+SELECT create_user('ManseChampanse', 'SuperManse123!', 'ManseChampanse@hotmail.com');
+-- Verify that the user has been created
+SELECT * FROM "user" WHERE username = 'ManseChampanse';
+
+
+-- Basic User Login Function with hashing and validation.
+CREATE OR REPLACE FUNCTION login_user(p_username_or_email VARCHAR, p_password VARCHAR)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_stored_password VARCHAR;
+    v_user_id INT;
+BEGIN
+    SELECT password, user_id
+    INTO v_stored_password, v_user_id
+    FROM "user"
+    WHERE username = p_username_or_email OR email = p_username_or_email;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Invalid username/email or password';
+    END IF;
+
+    -- Validate the provided password with the stored hashed password
+    IF crypt(p_password, v_stored_password) = v_stored_password THEN
+        -- Password matches, login successful
+        RETURN TRUE;
+    ELSE
+        -- Password does not match
+        RAISE EXCEPTION 'Invalid username/email or password';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+-- Test the login_user function with correct credentials
+SELECT login_user('ManseChampanse', 'SuperManse123!');
+-- Test the login_user function with an incorrect password
+SELECT login_user('ManseChampanse', 'WrongPassword!');
 
 
 
