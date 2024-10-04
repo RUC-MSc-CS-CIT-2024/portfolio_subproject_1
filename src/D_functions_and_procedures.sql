@@ -1,3 +1,65 @@
+-- This script contains all the functions and procedures that are part of the project.
+
+
+-- D1 Basic Framework Functionality.
+
+-- Basic User Signup Function that includes password validation.
+CREATE OR REPLACE FUNCTION create_user(p_username VARCHAR, p_password VARCHAR, p_email VARCHAR)
+RETURNS VOID AS $$
+DECLARE
+    -- Validation variables
+    v_min_length INT := 8; -- Minimum password length
+    v_has_upper BOOLEAN := FALSE;
+    v_has_lower BOOLEAN := FALSE;
+    v_has_digit BOOLEAN := FALSE;
+    v_has_special BOOLEAN := FALSE;
+BEGIN
+    -- Check if the username already exists
+    IF EXISTS (SELECT 1 FROM "user" WHERE username = p_username) THEN
+        RAISE EXCEPTION 'Username % already exists', p_username;
+
+    -- Check if the email already exists
+    ELSIF EXISTS (SELECT 1 FROM "user" WHERE email = p_email) THEN
+        RAISE EXCEPTION 'Email % already exists', p_email;
+
+    ELSE
+        -- Check password length
+        IF LENGTH(p_password) < v_min_length THEN
+            RAISE EXCEPTION 'Password must be at least % characters long', v_min_length;
+        END IF;
+
+        -- Check for uppercase letters
+        v_has_upper := p_password ~ '[A-Z]';
+
+        -- Check for lowercase letters
+        v_has_lower := p_password ~ '[a-z]';
+
+        -- Check for digits
+        v_has_digit := p_password ~ '[0-9]';
+
+        -- Check for special characters (non-alphanumeric)
+        v_has_special := p_password ~ '[^a-zA-Z0-9]';
+
+        IF NOT v_has_upper THEN
+            RAISE EXCEPTION 'Password must contain at least one uppercase letter';
+        ELSIF NOT v_has_lower THEN
+            RAISE EXCEPTION 'Password must contain at least one lowercase letter';
+        ELSIF NOT v_has_digit THEN
+            RAISE EXCEPTION 'Password must contain at least one digit';
+        ELSIF NOT v_has_special THEN
+            RAISE EXCEPTION 'Password must contain at least one special character';
+        END IF;
+
+        -- Succes!!, insert the new user
+        INSERT INTO "user" (username, password, email)
+        VALUES (p_username, p_password, p_email);
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
 --D2 SIMPLE SEARCH
 CREATE OR REPLACE FUNCTION simple_search
   (query varchar(100), user_id integer)
