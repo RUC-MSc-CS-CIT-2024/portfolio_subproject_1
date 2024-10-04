@@ -213,6 +213,103 @@ $$ LANGUAGE plpgsql;
 -- Test the follow_person function with valid user and person IDs
 SELECT follow_person(1, 1056); 
 
+-- unfollowed function
+CREATE OR REPLACE FUNCTION unfollow_person(p_follower_id INT, p_person_id INT)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the user is currently following the person
+    IF NOT EXISTS (
+        SELECT 1 FROM "following"
+        WHERE user_id = p_follower_id AND person_id = p_person_id
+    ) THEN
+        RAISE EXCEPTION 'User % is not following person %', p_follower_id, p_person_id;
+    END IF;
+
+    -- Remove the follow record
+    DELETE FROM "following"
+    WHERE user_id = p_follower_id AND person_id = p_person_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the unfollow_person function with valid user and person IDs
+SELECT unfollow_person(1, 1056);
+
+-- Bookmark media function
+CREATE OR REPLACE FUNCTION bookmark_media(p_user_id INT, p_media_id INT, p_note TEXT DEFAULT NULL)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the user has already bookmarked this media
+    IF EXISTS (
+        SELECT 1 FROM bookmark 
+        WHERE user_id = p_user_id AND media_id = p_media_id
+    ) THEN
+        RAISE EXCEPTION 'User % has already bookmarked media %', p_user_id, p_media_id;
+    END IF;
+
+    INSERT INTO bookmark (user_id, media_id, note)
+    VALUES (p_user_id, p_media_id, p_note);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Test the bookmark_media function with valid user and media IDs
+SELECT bookmark_media(1, 1023, 'Great Series, must watch later!');
+SELECT bookmark_media(1, 3299, 'Meh! Was decent I suppose...');
+
+-- Move bookmark to completed function
+CREATE OR REPLACE FUNCTION move_bookmark_to_completed(
+    p_user_id INT,
+    p_media_id INT,
+    p_rewatchability INT,
+    p_note TEXT DEFAULT NULL
+)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the media is bookmarked by the user
+    IF NOT EXISTS (
+        SELECT 1 FROM bookmark
+        WHERE user_id = p_user_id AND media_id = p_media_id
+    ) THEN
+        RAISE EXCEPTION 'Media % is not bookmarked by user %', p_media_id, p_user_id;
+    END IF;
+
+    -- Check for valid rewatchability score
+    IF p_rewatchability < 1 OR p_rewatchability > 5 THEN
+        RAISE EXCEPTION 'Rewatchability must be between 1 and 5';
+    END IF;
+
+    -- Move the media from bookmark to completed
+    INSERT INTO completed (user_id, media_id, completed_date, rewatchability, note)
+    VALUES (p_user_id, p_media_id, CURRENT_DATE, p_rewatchability, p_note);
+
+    -- Remove the media from bookmarks
+    DELETE FROM bookmark
+    WHERE user_id = p_user_id AND media_id = p_media_id;
+END;
+$$ LANGUAGE plpgsql;
+-- Test the move_bookmark_to_completed function with valid user and media IDs
+SELECT move_bookmark_to_completed(1, 1023, 5, 'Amazing movie!');
+
+
+
+-- unbookmark media whithout completing it
+CREATE OR REPLACE FUNCTION unbookmark_media(p_user_id INT, p_media_id INT)
+RETURNS VOID AS $$
+BEGIN
+    -- Check if the media is bookmarked by the user
+    IF NOT EXISTS (
+        SELECT 1 FROM bookmark
+        WHERE user_id = p_user_id AND media_id = p_media_id
+    ) THEN
+        RAISE EXCEPTION 'Media % is not bookmarked by user %', p_media_id, p_user_id;
+    END IF;
+
+    -- Remove the bookmark
+    DELETE FROM bookmark
+    WHERE user_id = p_user_id AND media_id = p_media_id;
+END;
+$$ LANGUAGE plpgsql;
+-- Test the unbookmark_media function with valid user and media IDs
+SELECT unbookmark_media(1, 3299);
 
 
 
