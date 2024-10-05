@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS title_title_type;
+DROP TABLE IF EXISTS title_title_attribute;
 DROP TABLE IF EXISTS media_genre;
 DROP TABLE IF EXISTS score;
 DROP TABLE IF EXISTS spoken_language;
@@ -5,6 +7,7 @@ DROP TABLE IF EXISTS crew_member;
 DROP TABLE IF EXISTS cast_member;
 DROP TABLE IF EXISTS promotional_media;
 DROP TABLE IF EXISTS release;
+DROP TABLE IF EXISTS title;
 DROP TABLE IF EXISTS media_in_collection;
 DROP TABLE IF EXISTS media_production_country;
 DROP TABLE IF EXISTS media_production_company;
@@ -20,6 +23,9 @@ DROP TABLE IF EXISTS country;
 DROP TABLE IF EXISTS "language";
 DROP TABLE IF EXISTS job_category;
 DROP TABLE IF EXISTS "collection";
+DROP TABLE IF EXISTS title_attribute;
+DROP TABLE IF EXISTS title_type;
+DROP TABLE IF EXISTS genre;
 
 CREATE TABLE country (
     country_id  INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -38,6 +44,16 @@ CREATE TABLE "language" (
 CREATE TABLE job_category (
     job_category_id     INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     "name"  VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE title_type (
+    title_type_id   INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"          VARCHAR(50)        NOT NULL
+);
+
+CREATE TABLE title_attribute (
+    title_attribute_id  INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"              TEXT        NOT NULL
 );
 
 CREATE TABLE media (
@@ -68,10 +84,15 @@ CREATE TABLE episode (
     FOREIGN KEY (media_id) REFERENCES media(media_id)
 );
 
+
+CREATE TABLE genre (
+    genre_id    INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"      VARCHAR(50) NOT NULL
+);
+
 CREATE TABLE media_genre (
-    "name"      VARCHAR(50) NOT NULL,
     media_id    INTEGER     NOT NULL REFERENCES media(media_id),
-    PRIMARY KEY (media_id, "name")
+    genre_id    INTEGER     NOT NULL REFERENCES genre(genre_id)
 );
 
 CREATE TABLE media_production_country (
@@ -108,14 +129,32 @@ CREATE TABLE related_media (
     PRIMARY KEY (primary_id, related_id)
 );
 
+CREATE TABLE title (
+    title_id    INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    "name"      TEXT        NOT NULL,
+    country_id  INTEGER     NULL REFERENCES country(country_id),
+    language_id INTEGER     NULL REFERENCES "language"(language_id),
+    media_id    INTEGER     NOT NULL REFERENCES media(media_id)
+);
+
 CREATE TABLE release (
     release_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    title           TEXT        NOT NULL,
-    release_date    DATE        NULL,
+    release_date    DATE        NOT NULL,
     rated           VARCHAR(80) NULL,
-    title_type      VARCHAR(64) NULL,
+    "type"          VARCHAR(50) NOT NULL,
     country_id      INTEGER     NULL REFERENCES country(country_id),
-    media_id        INTEGER     NOT NULL REFERENCES media(media_id) 
+    media_id        INTEGER     NOT NULL REFERENCES media(media_id),
+    title_id        INTEGER     NULL REFERENCES title(title_id)
+);
+
+CREATE TABLE title_title_type (
+    title_type_id   INTEGER NOT NULL REFERENCES title_type(title_type_id),
+    title_id        INTEGER NOT NULL REFERENCES title(title_id)
+);
+
+CREATE TABLE title_title_attribute (
+    title_attribute_id  INTEGER NOT NULL REFERENCES title_attribute(title_attribute_id),
+    title_id            INTEGER NOT NULL REFERENCES title(title_id)
 );
 
 CREATE TABLE spoken_language (
@@ -171,7 +210,6 @@ CREATE TABLE media_production_company (
     PRIMARY KEY (media_id, production_company_id)
 );
 
-
 ---
 --- Populate the new tables with data from the original tables
 ---
@@ -217,28 +255,6 @@ BEGIN
         ALTER TABLE public.omdb_data SET SCHEMA original;
     END IF;
 END $$;
-
--- remove all data to allow for multiple executions
-TRUNCATE TABLE media_genre CASCADE;
-TRUNCATE TABLE score CASCADE;
-TRUNCATE TABLE spoken_language CASCADE;
-TRUNCATE TABLE crew_member CASCADE;
-TRUNCATE TABLE cast_member CASCADE;
-TRUNCATE TABLE promotional_media CASCADE;
-TRUNCATE TABLE release CASCADE;
-TRUNCATE TABLE media_in_collection CASCADE;
-TRUNCATE TABLE media_production_country CASCADE;
-TRUNCATE TABLE media_production_company CASCADE;
-TRUNCATE TABLE related_media CASCADE;
-TRUNCATE TABLE season CASCADE;
-TRUNCATE TABLE episode CASCADE;
-TRUNCATE TABLE media CASCADE;
-TRUNCATE TABLE person CASCADE;
-TRUNCATE TABLE production_company CASCADE;
-TRUNCATE TABLE country CASCADE;
-TRUNCATE TABLE "language" CASCADE;
-TRUNCATE TABLE job_category CASCADE;
-TRUNCATE TABLE "collection" CASCADE;
 
 -- Countries
 
@@ -519,6 +535,24 @@ INSERT INTO language (imdb_language_code, iso_code, "name") VALUES
 ('yue', 'yue', 'Cantonese'),
 ('zu', 'zul', 'Zulu');
 
+-- Title types
+
+INSERT INTO title_type("name")
+SELECT DISTINCT unnest(string_to_array("types", '')) 
+FROM original.title_akas;
+
+-- Title attributes
+
+INSERT INTO title_attribute("name")
+SELECT DISTINCT unnest(string_to_array(attributes, ''))
+FROM original.title_akas;
+
+-- Genres
+
+INSERT INTO genre("name")
+SELECT DISTINCT unnest(string_to_array(genres, ','))
+FROM original.title_basics;
+
 -- Media
 
 INSERT INTO media ("type", runtime, imdb_id)
@@ -527,44 +561,92 @@ FROM original.title_basics;
 
 -- Insert all genres for media
 WITH
-    title_with_id AS (
-        SELECT *
+    media_genres AS (
+        SELECT media_id, unnest(string_to_array(genres, ',')) AS genre_name
         FROM original.title_basics AS t
         JOIN media AS m ON m.imdb_id = t.tconst
-    ),
-    split_genres AS (
-        SELECT media_id, unnest(string_to_array(genres, ',')) AS genre
-        FROM title_with_id
     )
-INSERT INTO media_genre (media_id, "name")
-SELECT media_id, genre
-FROM split_genres; 
+INSERT INTO media_genre (media_id, genre_id)
+SELECT mg.media_id, g.genre_id
+FROM media_genres AS mg
+JOIN genre AS g ON g."name" = mg.genre_name; 
+
+-- Insert title for media
+DO $$
+DECLARE
+    current_title RECORD;
+    insert_count INTEGER := 0; -- Initialize the counter
+    original_title_id INTEGER := (SELECT title_type_id FROM title_type WHERE "name" = 'original');
+BEGIN
+    FOR current_title IN
+        WITH 
+            titles_with_id AS (
+                SELECT ta.title, m.media_id, c.country_id, ta."types", ta.attributes, l.language_id, t.primarytitle, t.originaltitle
+                FROM original.title_akas AS ta
+                JOIN media AS m ON m.imdb_id = ta.titleid
+                JOIN original.title_basics AS t ON t.tconst = ta.titleid
+                JOIN "language" AS l ON l.imdb_language_code = ta."language"
+                JOIN country AS c ON c.imdb_country_code = ta.region
+            ),
+            inserted_titles AS (
+                INSERT INTO title ("name", country_id, language_id, media_id)
+                SELECT title, country_id, language_id, media_id
+                FROM titles_with_id
+                RETURNING *
+            )
+        SELECT it.title_id, t."types", t.attributes, t.title, t.originaltitle
+        FROM inserted_titles AS it
+        JOIN titles_with_id AS t 
+            ON t.media_id = it.media_id
+            AND t.title = it."name"
+            AND t.country_id = it.country_id
+            AND t.language_id = it.language_id
+    LOOP
+        WITH
+            title_types_names AS (
+                SELECT unnest(string_to_array(current_title.types, '')) AS type_name
+            ),
+            title_type_with_id AS (
+                SELECT tt.title_type_id, tt."name"
+                FROM title_types_names AS ttn
+                JOIN title_type AS tt ON tt."name" = ttn.type_name
+            )
+        INSERT INTO title_title_type (title_id, title_type_id)
+        SELECT current_title.title_id, title_type_id
+        FROM title_type_with_id;
+
+        WITH
+            title_attribute_names AS (
+                SELECT unnest(string_to_array(current_title.attributes, '')) AS attribute_name
+            ),
+            title_attribute_with_id AS (
+                SELECT ta.title_attribute_id, ta."name"
+                FROM title_attribute_names
+                JOIN title_attribute AS ta ON "name" = attribute_name
+            )
+        INSERT INTO title_title_attribute (title_id, title_attribute_id)
+        SELECT current_title.title_id, title_attribute_id
+        FROM title_attribute_with_id;
+
+        IF current_title.originaltitle = current_title.title THEN
+            INSERT INTO title_title_type (title_id, title_type_id)
+            VALUES (current_title.title_id, original_title_id);
+        END IF;
+    END LOOP;
+END $$;
 
 -- Insert release for media
 WITH
     titleaka_with_id AS (
-        SELECT t.originaltitle, t.primarytitle, ta.title, t.startyear, m.media_id, ta.region, ta.types
-        FROM original.title_akas AS ta
-        JOIN media AS m ON m.imdb_id = ta.titleid
-        JOIN original.title_basics AS t ON t.tconst = ta.titleid
+        SELECT t.originaltitle, t.primarytitle, t.startyear, m.media_id
+        FROM media AS m
+        JOIN original.title_basics AS t ON t.tconst = m.imdb_id
     )
-INSERT INTO "release" (title, release_date, media_id, country_id, title_type)
+INSERT INTO release (release_date, "type", media_id)
 SELECT 
-    title, 
-    TO_DATE(startyear, 'YYYY'), 
-    media_id,
-    (CASE
-	    WHEN region = '' THEN NULL
-        ELSE (SELECT country_id FROM country WHERE imdb_country_code = region) 
-    END),
-    (CASE
-	    WHEN types = '' THEN (CASE
-            WHEN originaltitle = title THEN 'original'
-            WHEN primarytitle = title THEN 'primary'
-            ELSE NULL
-        END)
-        ELSE SPLIT_PART(types, U&'0002', 1)
-    END)
+    TO_DATE(startyear, 'YYYY'),
+    'original',
+    media_id
 FROM titleaka_with_id;
 
 -- Seasons
@@ -572,6 +654,7 @@ FROM titleaka_with_id;
 DO $$
 DECLARE
     new_season_id INTEGER;
+    new_title_id INTEGER;
     current_season RECORD;
     insert_count INTEGER := 0; -- Initialize the counter
 BEGIN
@@ -580,7 +663,7 @@ BEGIN
         SELECT 
             e.parenttconst,
             e.seasonnumber AS season_number,
-            TO_DATE(MIN(t.startyear)::TEXT, 'YYYY') AS start_date,  
+            TO_DATE(MIN(t.startyear)::TEXT, 'YYYY') AS "start_date",  
             s.primarytitle AS show_title,
             m.media_id
         FROM original.title_basics AS t
@@ -594,25 +677,32 @@ BEGIN
         VALUES ('tvSeason')
         RETURNING media_id INTO new_season_id; 
 
-        -- Increment the counter
         insert_count := insert_count + 1;
         
         -- Insert season data for new media record
         INSERT INTO season (media_id, "status", season_number, series_id)
         VALUES (new_season_id, 'unknown', current_season.season_number, current_season.media_id);
 
-        -- Increment the counter
         insert_count := insert_count + 1;
 
         -- Create title for season ('{series_title} - Season {season_number}')
-        INSERT INTO "release" (title, release_date, media_id, title_type)
+        INSERT INTO title ("name", media_id)
         VALUES (
             FORMAT('%s - Season %s', current_season.show_title, current_season.season_number), 
-            current_season.start_date, 
-            new_season_id,
-            'primary');
+            new_season_id)
+        RETURNING title_id INTO new_title_id;
 
-        -- Increment the counter
+        insert_count := insert_count + 1;
+
+        INSERT INTO title_title_type(title_id, title_type_id)
+        VALUES (new_title_id, (SELECT title_type_id FROM title_type WHERE "name" = 'alternative'));
+        
+        insert_count := insert_count + 1;
+
+        -- Insert release for season
+        INSERT INTO "release" (release_date, "type", media_id)
+        VALUES (current_season.start_date, 'original', new_season_id);
+
         insert_count := insert_count + 1;
     END LOOP;
 
@@ -702,39 +792,40 @@ SET plot = (CASE
         ELSE o.awards END)
 FROM original.omdb_data AS o
 WHERE media.imdb_id = o.tconst;
-
--- Update released
+ 
+-- Update release rating
 
 UPDATE release
-SET rated = (CASE
+SET 
+    rated = (CASE
 	    WHEN o.rated = 'N/A' THEN NULL
 	    WHEN o.rated = '' THEN NULL
         ELSE o.rated END)
-FROM original.omdb_data o JOIN media
-ON media.imdb_id = o.tconst
-WHERE release.media_id = media.media_id;
+FROM original.omdb_data AS o 
+JOIN media AS m ON m.imdb_id = o.tconst
+WHERE release.media_id = m.media_id;
 
--- Update release or create new releases if the dates are different
-WITH updated AS (
-    UPDATE release
-    SET release_date = o.released::date
-    FROM original.omdb_data o
-    JOIN media ON media.imdb_id = o.tconst
-    WHERE release.media_id = media.media_id
-        AND DATE_PART('year', release.release_date::date) = DATE_PART('year', o.released::date)
-        AND o.released != 'N/A' 
-        AND o.released != ''
-    RETURNING release.media_id
+-- Update or create release release_date
+WITH 
+    omdb_with_release AS (
+        SELECT m.media_id, o.released, o.rated
+        FROM media AS m
+        JOIN original.omdb_data AS o ON m.imdb_id = o.tconst
+        WHERE o.released != 'N/A' 
+            AND o.released != ''
+    ),
+    updated AS (
+        UPDATE release
+        SET release_date = o.released::date
+        FROM omdb_with_release AS o
+        WHERE release.media_id = o.media_id
+            AND DATE_PART('year', release.release_date::date) = DATE_PART('year', o.released::date)
+        RETURNING release.media_id
 )
-INSERT INTO release (title, release_date, country_id, media_id, rated)
-SELECT o.title, o.released::date, null, media.media_id, o.rated
-FROM original.omdb_data o
-JOIN media ON media.imdb_id = o.tconst
-LEFT JOIN updated u ON u.media_id = media.media_id
-WHERE o.released IS NOT NULL
-    AND o.released != 'N/A' 
-    AND o.released != ''
-    AND media.media_id != u.media_id;
+INSERT INTO release (release_date, "type", media_id, rated)
+SELECT o.released::DATE, 'original', o.media_id, o.rated
+FROM omdb_with_release AS o
+WHERE o.media_id NOT IN (SELECT u.media_id FROM updated AS u);
 
 -- Create posters
 INSERT INTO promotional_media(release_id, "type", uri)
