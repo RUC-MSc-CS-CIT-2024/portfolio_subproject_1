@@ -570,6 +570,18 @@ FROM media_genres AS mg
 JOIN genre AS g ON g."name" = mg.genre_name; 
 
 -- Insert title for media
+WITH
+    titles_with_id AS (
+        SELECT ta.title, m.media_id, c.country_id, l.language_id, ta.titleid
+        FROM original.title_akas AS ta
+        JOIN media AS m ON m.imdb_id = ta.titleid
+        LEFT JOIN "language" AS l ON l.imdb_language_code = ta."language"
+        LEFT JOIN country AS c ON c.imdb_country_code = ta.region
+    )
+INSERT INTO title ("name", country_id, language_id, media_id)
+SELECT title, country_id, language_id, media_id
+FROM titles_with_id;
+
 DO $$
 DECLARE
     current_title RECORD;
@@ -585,46 +597,45 @@ BEGIN
                 JOIN original.title_basics AS t ON t.tconst = ta.titleid
                 LEFT JOIN "language" AS l ON l.imdb_language_code = ta."language"
                 LEFT JOIN country AS c ON c.imdb_country_code = ta.region
-            ),
-            inserted_titles AS (
-                INSERT INTO title ("name", country_id, language_id, media_id)
-                SELECT title, country_id, language_id, media_id
-                FROM titles_with_id
-                RETURNING *
             )
-        SELECT it.title_id, t."types", t.attributes, t.title, t.originaltitle
-        FROM inserted_titles AS it
-        JOIN titles_with_id AS t 
-            ON t.media_id = it.media_id
-            AND t.title = it."name"
-            AND t.country_id = it.country_id
-            AND t.language_id = it.language_id
+        SELECT t.title_id, t."name" AS title, ti.attributes, ti."types", ti.primarytitle, ti.originaltitle
+        FROM title AS t
+        JOIN media AS m ON m.media_id = t.media_id
+        JOIN titles_with_id AS ti
+            ON ti.media_id = t.media_id
+            AND ti.title = t."name"
+            AND COALESCE(cast(ti.country_id AS VARCHAR), 'NA') = COALESCE(cast(t.country_id AS VARCHAR), 'NA')
+            AND COALESCE(cast(ti.language_id AS VARCHAR), 'NA') = COALESCE(cast(t.language_id AS VARCHAR), 'NA')
     LOOP
-        WITH
-            title_types_names AS (
-                SELECT unnest(string_to_array(current_title.types, '')) AS type_name
-            ),
-            title_type_with_id AS (
-                SELECT tt.title_type_id, tt."name"
-                FROM title_types_names AS ttn
-                JOIN title_type AS tt ON tt."name" = ttn.type_name
-            )
-        INSERT INTO title_title_type (title_id, title_type_id)
-        SELECT current_title.title_id, title_type_id
-        FROM title_type_with_id;
+        IF current_title.types != '' THEN
+            WITH
+                title_types_names AS (
+                    SELECT unnest(string_to_array(current_title.types, '')) AS type_name
+                ),
+                title_type_with_id AS (
+                    SELECT tt.title_type_id, tt."name"
+                    FROM title_types_names AS ttn
+                    JOIN title_type AS tt ON tt."name" = ttn.type_name
+                )
+            INSERT INTO title_title_type (title_id, title_type_id)
+            SELECT current_title.title_id, title_type_id
+            FROM title_type_with_id;
+        END IF;
 
-        WITH
-            title_attribute_names AS (
-                SELECT unnest(string_to_array(current_title.attributes, '')) AS attribute_name
-            ),
-            title_attribute_with_id AS (
-                SELECT ta.title_attribute_id, ta."name"
-                FROM title_attribute_names
-                JOIN title_attribute AS ta ON "name" = attribute_name
-            )
-        INSERT INTO title_title_attribute (title_id, title_attribute_id)
-        SELECT current_title.title_id, title_attribute_id
-        FROM title_attribute_with_id;
+        IF current_title.attributes != '' THEN
+            WITH
+                title_attribute_names AS (
+                    SELECT unnest(string_to_array(current_title.attributes, '')) AS attribute_name
+                ),
+                title_attribute_with_id AS (
+                    SELECT ta.title_attribute_id, ta."name"
+                    FROM title_attribute_names
+                    JOIN title_attribute AS ta ON "name" = attribute_name
+                )
+            INSERT INTO title_title_attribute (title_id, title_attribute_id)
+            SELECT current_title.title_id, title_attribute_id
+            FROM title_attribute_with_id;
+        END IF;
 
         IF current_title.originaltitle = current_title.title THEN
             INSERT INTO title_title_type (title_id, title_type_id)
