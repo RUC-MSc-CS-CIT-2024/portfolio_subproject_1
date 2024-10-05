@@ -547,6 +547,12 @@ INSERT INTO title_attribute("name")
 SELECT DISTINCT unnest(string_to_array(attributes, ''))
 FROM original.title_akas;
 
+-- Genres
+
+INSERT INTO genre("name")
+SELECT DISTINCT unnest(string_to_array(genres, ','))
+FROM original.title_basics;
+
 -- Media
 
 INSERT INTO media ("type", runtime, imdb_id)
@@ -555,27 +561,15 @@ FROM original.title_basics;
 
 -- Insert all genres for media
 WITH
-    title_with_id AS (
-        SELECT *
+    media_genres AS (
+        SELECT media_id, unnest(string_to_array(genres, ',')) AS genre_name
         FROM original.title_basics AS t
         JOIN media AS m ON m.imdb_id = t.tconst
-    ),
-    split_genres AS (
-        SELECT media_id, unnest(string_to_array(genres, ',')) AS genre_name
-        FROM title_with_id
-    ),
-    insert_genres AS (
-        INSERT INTO genre("name")
-        SELECT DISTINCT unnest(string_to_array(genres, ','))
-        FROM original.title_basics
-        RETURNING genre_id, "name"
     )
 INSERT INTO media_genre (media_id, genre_id)
-SELECT media_id, genre_id
-FROM split_genres
-JOIN genre AS g ON "name" = genre_name; 
-
-
+SELECT mg.media_id, g.genre_id
+FROM media_genres AS mg
+JOIN genre AS g ON g."name" = mg.genre_name; 
 
 -- Insert title for media
 DO $$
@@ -828,10 +822,10 @@ WITH
             AND DATE_PART('year', release.release_date::date) = DATE_PART('year', o.released::date)
         RETURNING release.media_id
 )
-INSERT INTO release (release_date, media_id, rated)
-SELECT o.released::DATE, o.media_id, o.rated
+INSERT INTO release (release_date, "type", media_id, rated)
+SELECT o.released::DATE, 'original', o.media_id, o.rated
 FROM omdb_with_release AS o
-WHERE media.media_id NOT IN (SELECT u.media_id FROM updated AS u);
+WHERE o.media_id NOT IN (SELECT u.media_id FROM updated AS u);
 
 -- Create posters
 INSERT INTO promotional_media(release_id, "type", uri)
