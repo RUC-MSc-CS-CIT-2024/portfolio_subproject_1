@@ -583,8 +583,8 @@ BEGIN
                 FROM original.title_akas AS ta
                 JOIN media AS m ON m.imdb_id = ta.titleid
                 JOIN original.title_basics AS t ON t.tconst = ta.titleid
-                JOIN "language" AS l ON l.imdb_language_code = ta."language"
-                JOIN country AS c ON c.imdb_country_code = ta.region
+                LEFT JOIN "language" AS l ON l.imdb_language_code = ta."language"
+                LEFT JOIN country AS c ON c.imdb_country_code = ta.region
             ),
             inserted_titles AS (
                 INSERT INTO title ("name", country_id, language_id, media_id)
