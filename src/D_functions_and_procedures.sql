@@ -3,45 +3,129 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Indexing
 
--- User-Related Foreign Keys
-CREATE INDEX idx_search_history_user_id ON search_history(user_id);
-CREATE INDEX idx_bookmark_user_id ON bookmark(user_id);
-CREATE INDEX idx_completed_user_id ON completed(user_id);
-CREATE INDEX idx_user_score_user_id ON user_score(user_id);
+DO $$
+BEGIN
+    -- User-Related Foreign Keys
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_search_history_user_id') THEN
+        CREATE INDEX idx_search_history_user_id ON search_history(user_id);
+    END IF;
 
--- Media-Related Foreign Keys
-CREATE INDEX idx_bookmark_media_id ON bookmark(media_id);
-CREATE INDEX idx_completed_media_id ON completed(media_id);
-CREATE INDEX idx_user_score_media_id ON user_score(media_id);
-CREATE INDEX idx_season_series_id ON season(series_id);
-CREATE INDEX idx_episode_season_id ON episode(season_id);
-CREATE INDEX idx_media_genre_media_id ON media_genre(media_id);
-CREATE INDEX idx_media_production_country_media_id ON media_production_country(media_id);
-CREATE INDEX idx_score_media_id ON score(media_id);
-CREATE INDEX idx_media_in_collection_media_id ON media_in_collection(media_id);
-CREATE INDEX idx_related_media_primary_id ON related_media(primary_id);
-CREATE INDEX idx_related_media_related_id ON related_media(related_id);
-CREATE INDEX idx_media_imdb_id ON media(imdb_id);
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_bookmark_user_id') THEN
+        CREATE INDEX idx_bookmark_user_id ON bookmark(user_id);
+    END IF;
 
--- Person-Related Foreign Keys
-CREATE INDEX idx_crew_member_person_id ON crew_member(person_id);
-CREATE INDEX idx_cast_member_person_id ON cast_member(person_id);
-CREATE INDEX idx_person_name ON person(name);
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_completed_user_id') THEN
+        CREATE INDEX idx_completed_user_id ON completed(user_id);
+    END IF;
 
--- Commonly Queried Columns
-CREATE INDEX idx_user_username ON "user"(username);
-CREATE INDEX idx_user_email ON "user"(email);
-CREATE INDEX idx_completed_completed_date ON completed(completed_date);
-CREATE INDEX idx_user_score_score_value ON user_score(score_value);
-CREATE INDEX idx_search_history_type ON search_history(type);
-CREATE INDEX idx_media_in_collection_collection_id ON media_in_collection(collection_id);
-CREATE INDEX idx_wi_words ON wi(word);
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_score_user_id') THEN
+        CREATE INDEX idx_user_score_user_id ON user_score(user_id);
+    END IF;
 
--- Composite Indexes
-CREATE INDEX idx_media_production_country_media_country ON media_production_country(media_id, country_id);
-CREATE INDEX idx_media_country ON media_production_country(country_id, media_id);
-CREATE INDEX idx_media_in_collection_collection_media ON media_in_collection(collection_id, media_id);
+    -- Media-Related Foreign Keys
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_bookmark_media_id') THEN
+        CREATE INDEX idx_bookmark_media_id ON bookmark(media_id);
+    END IF;
 
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_completed_media_id') THEN
+        CREATE INDEX idx_completed_media_id ON completed(media_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_score_media_id') THEN
+        CREATE INDEX idx_user_score_media_id ON user_score(media_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_season_series_id') THEN
+        CREATE INDEX idx_season_series_id ON season(series_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_episode_season_id') THEN
+        CREATE INDEX idx_episode_season_id ON episode(season_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_genre_media_id') THEN
+        CREATE INDEX idx_media_genre_media_id ON media_genre(media_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_production_country_media_id') THEN
+        CREATE INDEX idx_media_production_country_media_id ON media_production_country(media_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_score_media_id') THEN
+        CREATE INDEX idx_score_media_id ON score(media_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_in_collection_media_id') THEN
+        CREATE INDEX idx_media_in_collection_media_id ON media_in_collection(media_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_related_media_primary_id') THEN
+        CREATE INDEX idx_related_media_primary_id ON related_media(primary_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_related_media_related_id') THEN
+        CREATE INDEX idx_related_media_related_id ON related_media(related_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_imdb_id') THEN
+        CREATE INDEX idx_media_imdb_id ON media(imdb_id);
+    END IF;
+
+    -- Person-Related Foreign Keys
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_crew_member_person_id') THEN
+        CREATE INDEX idx_crew_member_person_id ON crew_member(person_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_cast_member_person_id') THEN
+        CREATE INDEX idx_cast_member_person_id ON cast_member(person_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_person_name') THEN
+        CREATE INDEX idx_person_name ON person(name);
+    END IF;
+
+    -- Commonly Queried Columns
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_username') THEN
+        CREATE INDEX idx_user_username ON "user"(username);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_email') THEN
+        CREATE INDEX idx_user_email ON "user"(email);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_completed_completed_date') THEN
+        CREATE INDEX idx_completed_completed_date ON completed(completed_date);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_score_score_value') THEN
+        CREATE INDEX idx_user_score_score_value ON user_score(score_value);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_search_history_type') THEN
+        CREATE INDEX idx_search_history_type ON search_history(type);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_in_collection_collection_id') THEN
+        CREATE INDEX idx_media_in_collection_collection_id ON media_in_collection(collection_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_wi_words') THEN
+        CREATE INDEX idx_wi_words ON wi(word);
+    END IF;
+
+    -- Composite Indexes
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_production_country_media_country') THEN
+        CREATE INDEX idx_media_production_country_media_country ON media_production_country(media_id, country_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_country') THEN
+        CREATE INDEX idx_media_country ON media_production_country(country_id, media_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_in_collection_collection_media') THEN
+        CREATE INDEX idx_media_in_collection_collection_media ON media_in_collection(collection_id, media_id);
+    END IF;
+END $$;
 
 -- D1 Basic Framework Functionality.
 
@@ -93,9 +177,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Execute the create_user function directly
-SELECT create_user('ManseChampanse', 'SuperManse123!', 'ManseChampanse@hotmail.com');
--- Verify that the user has been created
-SELECT * FROM "user" WHERE username = 'ManseChampanse';
+-- SELECT create_user('ManseChampanse', 'SuperManse123!', 'ManseChampanse@hotmail.com');
+-- -- Verify that the user has been created
+-- SELECT * FROM "user" WHERE username = 'ManseChampanse';
 
 
 -- Basic User Login Function with hashing and validation.
@@ -125,9 +209,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- Test the login_user function with correct credentials
-SELECT login_user('ManseChampanse', 'SuperManse123!');
--- Test the login_user function with an incorrect password
-SELECT login_user('ManseChampanse', 'WrongPassword!');
+-- SELECT login_user('ManseChampanse', 'SuperManse123!');
+-- -- Test the login_user function with an incorrect password
+-- SELECT login_user('ManseChampanse', 'WrongPassword!');
 
 
 -- Basic User Password Update Function with password validation.
@@ -172,7 +256,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Test the update_user_password function with a valid user ID and password
-SELECT update_user_password(1, 'NewStrongPass1!');
+-- SELECT update_user_password(1, 'NewStrongPass1!');
 
 -- Basic User Email Update Function with email validation.
 CREATE OR REPLACE FUNCTION update_user_credentials(p_user_id INT, p_new_username VARCHAR DEFAULT NULL, p_new_email VARCHAR DEFAULT NULL)
@@ -202,13 +286,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Update only the username
-SELECT update_user_credentials(1, 'NewUsername', NULL);
+-- SELECT update_user_credentials(1, 'NewUsername', NULL);
 
--- Update only the email
-SELECT update_user_credentials(1, NULL, 'newemail@example.com');
+-- -- Update only the email
+-- SELECT update_user_credentials(1, NULL, 'newemail@example.com');
 
--- Update both username and email
-SELECT update_user_credentials(1, 'AnotherUsername', 'anotheremail@example.com');
+-- -- Update both username and email
+-- SELECT update_user_credentials(1, 'AnotherUsername', 'anotheremail@example.com');
 
 -- Basic User Deletion Function with validation.
 CREATE OR REPLACE FUNCTION delete_user(p_user_id INT)
@@ -225,7 +309,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Test the delete_user function with an existing user ID
-SELECT delete_user(1);
+-- SELECT delete_user(1);
 
 -- followed function
 CREATE OR REPLACE FUNCTION follow_person(p_follower_id INT, p_person_id INT)
@@ -252,7 +336,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Test the follow_person function with valid user and person IDs
-SELECT follow_person(1, 1056); 
+-- SELECT follow_person(1, 1056); 
 
 -- unfollowed function
 CREATE OR REPLACE FUNCTION unfollow_person(p_follower_id INT, p_person_id INT)
@@ -273,7 +357,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Test the unfollow_person function with valid user and person IDs
-SELECT unfollow_person(1, 1056);
+-- SELECT unfollow_person(1, 1056);
 
 -- Bookmark media function
 CREATE OR REPLACE FUNCTION bookmark_media(p_user_id INT, p_media_id INT, p_note TEXT DEFAULT NULL)
@@ -293,8 +377,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Test the bookmark_media function with valid user and media IDs
-SELECT bookmark_media(1, 1023, 'Great Series, must watch later!');
-SELECT bookmark_media(1, 3299, 'Meh! Was decent I suppose...');
+-- SELECT bookmark_media(1, 1023, 'Great Series, must watch later!');
+-- SELECT bookmark_media(1, 3299, 'Meh! Was decent I suppose...');
 
 -- Move bookmark to completed function
 CREATE OR REPLACE FUNCTION move_bookmark_to_completed(
@@ -328,7 +412,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- Test the move_bookmark_to_completed function with valid user and media IDs
-SELECT move_bookmark_to_completed(1, 1023, 5, 'Amazing movie!');
+-- SELECT move_bookmark_to_completed(1, 1023, 5, 'Amazing movie!');
 
 
 
@@ -350,7 +434,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- Test the unbookmark_media function with valid user and media IDs
-SELECT unbookmark_media(1, 3299);
+-- SELECT unbookmark_media(1, 3299);
 
 --D2 SIMPLE SEARCH
 CREATE OR REPLACE FUNCTION simple_search
@@ -358,23 +442,32 @@ CREATE OR REPLACE FUNCTION simple_search
 RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
-  -- SEARCH HISTORY
-  INSERT INTO search_history (user_id, type, query)
-  VALUES (user_id, 'simple_search', query);
+    -- SEARCH HISTORY
+    INSERT INTO search_history (user_id, type, query)
+    VALUES (user_id, 'simple_search', query);
 
-  -- RESULT
-  RETURN QUERY
-  SELECT me.media_id, re.title
-  FROM media me 
-  JOIN "release" re USING (media_id)
-  WHERE re.title LIKE '%' || query || '%' 
-     OR me.plot LIKE '%' || query || '%';
+    -- RESULT
+    RETURN QUERY
+    WITH 
+        search_result AS (
+            SELECT me.media_id
+            FROM media AS me
+            JOIN title AS ti USING (media_id)
+            WHERE ti."name" LIKE '%' || query || '%' 
+            OR me.plot LIKE '%' || query || '%'
+        )
+    SELECT DISTINCT imdb_id, title, media_type
+    FROM search_result
+    JOIN title AS t USING (media_id)
+    JOIN title_title_type USING (title_id)
+    JOIN title_type AS tt USING (title_type_id)
+    WHERE tt."name" = 'original';
 END;
 $$
 LANGUAGE 'plpgsql';
 
 --D2 TEST
-SELECT * FROM simple_search('apple',1);
+-- SELECT * FROM simple_search('apple',1);
 
 
 --D3 Rating function
@@ -437,21 +530,21 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- D3 TEST
-DO $$
-DECLARE
-    john_id INTEGER;
-    jane_id INTEGER;
-BEGIN
-    -- Retrieve user IDs for john_doe and jane_doe
-    SELECT user_id INTO john_id FROM "user" WHERE username = 'john_doe';
-    SELECT user_id INTO jane_id FROM "user" WHERE username = 'jane_smith';
+-- DO $$
+-- DECLARE
+--     john_id INTEGER;
+--     jane_id INTEGER;
+-- BEGIN
+--     -- Retrieve user IDs for john_doe and jane_doe
+--     SELECT user_id INTO john_id FROM "user" WHERE username = 'john_doe';
+--     SELECT user_id INTO jane_id FROM "user" WHERE username = 'jane_smith';
 
-    -- Perform ratings using the rate() function
-    PERFORM rate(john_id, 'tt1375666', 8.0, 'nice'); 
-    PERFORM rate(john_id, 'tt1375666', 9.0, 'super nice'); 
-    PERFORM rate(jane_id, 'tt1375666', 7.0, 'okay');
-	PERFORM rate(jane_id, 'tt13729548', 2.0, 'bad');
-END $$;
+--     -- Perform ratings using the rate() function
+--     PERFORM rate(john_id, 'tt1375666', 8.0, 'nice'); 
+--     PERFORM rate(john_id, 'tt1375666', 9.0, 'super nice'); 
+--     PERFORM rate(jane_id, 'tt1375666', 7.0, 'okay');
+-- 	PERFORM rate(jane_id, 'tt13729548', 2.0, 'bad');
+-- END $$;
 
 
 -- D4 Structured string search
@@ -465,30 +558,32 @@ CREATE OR REPLACE FUNCTION structured_string_search (
 RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
-  -- SEARCH HISTORY
-  INSERT INTO search_history (user_id, "type", query)
-  VALUES (p_user_id, 'structured_string_search', 
-          FORMAT('title: "%s", plot: "%s", character: "%s", person: "%s"', p_title, p_plot, p_character, p_person));
+    -- SEARCH HISTORY
+    INSERT INTO search_history (user_id, "type", query)
+    VALUES (p_user_id, 'structured_string_search', 
+        FORMAT('title: "%s", plot: "%s", character: "%s", person: "%s"', p_title, p_plot, p_character, p_person));
 
-  -- RESULT
-  RETURN QUERY
-  WITH
-    search_result AS (
-        SELECT DISTINCT m.media_id, m.imdb_id, m."type" AS media_type
-        FROM media AS m
-        JOIN "release" r USING (media_id)
-        LEFT JOIN crew_member cr ON m.media_id = cr.media_id
-        LEFT JOIN cast_member ca ON m.media_id = ca.media_id
-        LEFT JOIN person p ON ca.person_id = p.person_id OR cr.person_id = p.person_id
-        WHERE (r.title ILIKE '%' || p_title || '%' OR r.title IS NULL)
-            AND (m.plot ILIKE '%' || p_plot || '%' OR m.plot IS NULL)
-            AND (ca."character" ILIKE '%' || p_character || '%' OR ca."character" IS NULL)
-            AND (p."name" ILIKE '%' || p_person || '%' OR p."name" IS NULL)
-    )
-  SELECT DISTINCT imdb_id, title, media_type
-  FROM search_result
-  JOIN "release" USING (media_id)
-  WHERE title_type = 'original';
+    -- RESULT
+    RETURN QUERY
+    WITH
+        search_result AS (
+            SELECT DISTINCT m.media_id, m.imdb_id, m."type" AS media_type
+            FROM media AS m
+            JOIN title AS t USING (media_id)
+            LEFT JOIN crew_member cr ON m.media_id = cr.media_id
+            LEFT JOIN cast_member ca ON m.media_id = ca.media_id
+            LEFT JOIN person p ON ca.person_id = p.person_id OR cr.person_id = p.person_id
+            WHERE (t.title ILIKE '%' || p_title || '%' OR t.title IS NULL)
+                AND (m.plot ILIKE '%' || p_plot || '%' OR m.plot IS NULL)
+                AND (ca."character" ILIKE '%' || p_character || '%' OR ca."character" IS NULL)
+                AND (p."name" ILIKE '%' || p_person || '%' OR p."name" IS NULL)
+        )
+    SELECT DISTINCT imdb_id, title, media_type
+    FROM search_result
+    JOIN title AS t USING (media_id)
+    JOIN title_title_type USING (title_id)
+    JOIN title_type AS tt USING (title_type_id)
+    WHERE tt."name" = 'original';
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -525,7 +620,7 @@ $$
 language plpgsql;
 
 --TEST
-SELECT * FROM structured_string_search_name('Jennifer',1);
+-- SELECT * FROM structured_string_search_name('Jennifer',1);
 
 -- D6 View to simplify queries for actors and their associated media
 CREATE OR REPLACE VIEW actor_media_view AS
@@ -573,7 +668,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- D6 TEST
-SELECT * FROM get_frequent_coplaying_actors('Jennifer Aniston');
+-- SELECT * FROM get_frequent_coplaying_actors('Jennifer Aniston')
+-- LIMIT 20;
 
 -- D7
 CREATE OR REPLACE FUNCTION calculate_name_rating() RETURNS VOID AS $$
@@ -616,7 +712,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- Test with a sample media ID
-SELECT * FROM list_actors_by_popularity(36);
+-- SELECT * FROM list_actors_by_popularity(36);
 
 -- D8 List Co-Actors by Popularity for a Given Actor
 CREATE OR REPLACE FUNCTION list_co_actors_by_popularity(p_actor_id INT)
@@ -636,15 +732,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- Test with a sample actor ID
-SELECT * FROM list_co_actors_by_popularity(64);
+-- SELECT * FROM list_co_actors_by_popularity(64)
+-- LIMIT 20;
 
 
 -- D10 Frequent person words
--- Copy the 'wi' table from the 'original' schema to the 'public' schema
-CREATE TABLE public.wi AS
-SELECT *
-FROM original.wi;
-
 -- Create the function 'person_words' to retrieve words associated with a person's titles
 CREATE OR REPLACE FUNCTION person_words(
     p_person_name VARCHAR,
@@ -666,53 +758,68 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- D10 TEST
-SELECT * FROM person_words('Jennifer Aniston', 8);
+-- SELECT * FROM person_words('Jennifer Aniston', 8);
 
 
 -- D11 Function to find titles to match the exact-match querying 
 CREATE OR REPLACE FUNCTION exact_match_titles(
     keywords TEXT[]
 )
-RETURNS TABLE (media_id INTEGER) AS $$
+RETURNS TABLE (media_id INTEGER, title TEXT) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.media_id
+    -- Find matching media IDs based on keywords in the wi table
+    WITH
+        imdb_ids_with_word AS (
+            SELECT tconst AS imdb_id
+            FROM wi
+            WHERE word = ANY(keywords)
+            GROUP BY tconst
+            HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
+        )
+    SELECT m.media_id, t."name" AS title
     FROM media m
-    JOIN (
-        SELECT tconst
-        FROM wi
-        WHERE word = ANY(keywords)
-        GROUP BY tconst
-        HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
-    ) w ON m.imdb_id = w.tconst;
+    JOIN imdb_ids_with_word USING(imdb_id)
+    JOIN title AS t USING(media_id)
+    JOIN title_title_type USING(title_id)
+    JOIN title_type AS tt using(title_type_id)
+    WHERE tt."name" = 'original';
 END;
 $$ LANGUAGE plpgsql;
 
 -- D11 TEST 
-SELECT * FROM exact_match_titles(ARRAY['apple','mads','mikkelsen']);
-SELECT title FROM release WHERE media_id=47460;
-
+-- SELECT * FROM exact_match_titles(ARRAY['apple','mads','mikkelsen']);
+-- SELECT "name" FROM title WHERE media_id=47460;
 
 -- D12 Function to best match querying, ranking and ordering the media.
 CREATE OR REPLACE FUNCTION best_match_titles(
     keywords TEXT[]
 )
-RETURNS TABLE (media_id INTEGER, match_count INTEGER) AS $$
+RETURNS TABLE (media_id INTEGER, title TEXT, match_count INTEGER) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.media_id, COUNT(DISTINCT wi.word)::INTEGER AS match_count
-    FROM media m
+    WITH
+        original_titles AS (
+            SELECT DISTINCT m.media_id, t."name" AS title
+            FROM media m
+            JOIN title AS t USING(media_id)
+            JOIN title_title_type USING(title_id)
+            JOIN title_type AS tt USING(title_type_id)
+            WHERE tt."name" = 'original'
+        )
+    SELECT m.media_id, t.title, COUNT(DISTINCT wi.word)::INTEGER AS match_count
+    FROM media AS m
     JOIN wi ON m.imdb_id = wi.tconst
+    JOIN original_titles AS t USING(media_id)
     WHERE wi.word = ANY(keywords)
-    GROUP BY m.media_id
+    GROUP BY m.media_id, r.title
     ORDER BY match_count DESC;
 END;
 $$ LANGUAGE plpgsql;
 
 -- D12 TEST
-SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
-SELECT title FROM release WHERE media_id=47460;
-
+-- SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
+-- SELECT "name" FROM title WHERE media_id=47460;
 
 -- D13 Function for word_to_words_querying, ranking and ordering the words
 CREATE OR REPLACE FUNCTION word_to_words_query(
@@ -724,9 +831,9 @@ BEGIN
     -- Select matching titles based on the keyword query
     WITH matched_titles AS (
         SELECT m.media_id, m.imdb_id
-        FROM release r
+        FROM title AS t
         JOIN media m ON r.media_id = m.media_id
-        WHERE r.title ILIKE ANY (ARRAY(SELECT '%' || kw || '%' FROM unnest(keywords) AS kw))
+        WHERE t."name" ILIKE ANY (ARRAY(SELECT '%' || kw || '%' FROM unnest(keywords) AS kw))
     ),
     
     -- Select all words from the wi table associated with the matched titles
@@ -745,4 +852,4 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- D13 TEST
-SELECT * FROM word_to_words_query(ARRAY['apple', 'mads', 'mikkelsen']);
+-- SELECT * FROM word_to_words_query(ARRAY['apple', 'mads', 'mikkelsen']);
