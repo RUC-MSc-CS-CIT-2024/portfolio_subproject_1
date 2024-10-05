@@ -6,3 +6,15 @@
 
 -- Begin transaction
 BEGIN;
+
+-- Test create_user function
+-- Attempt to create a new user
+
+-- Display users before creation
+SELECT * FROM "user";
+
+-- Call the function
+SELECT create_user('testuser', 'Password123!', 'testuser@example.com');
+
+-- Display users after creation
+SELECT * FROM "user";
