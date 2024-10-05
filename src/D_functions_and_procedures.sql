@@ -127,9 +127,11 @@ BEGIN
     END IF;
 END $$;
 
--- D1 Basic Framework Functionality.
+-- ============================================================
+-- D1 Basic Framework Functionality
+-- Test create_user function
+-- ============================================================
 
--- Basic User Signup Function that includes password validation.
 CREATE OR REPLACE FUNCTION create_user(p_username VARCHAR, p_password VARCHAR, p_email VARCHAR)
 RETURNS VOID AS $$
 DECLARE
@@ -176,13 +178,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Execute the create_user function directly
--- SELECT create_user('ManseChampanse', 'SuperManse123!', 'ManseChampanse@hotmail.com');
--- -- Verify that the user has been created
--- SELECT * FROM "user" WHERE username = 'ManseChampanse';
+-- ============================================================
+-- D1 Test login_user function
+-- ============================================================
 
-
--- Basic User Login Function with hashing and validation.
 CREATE OR REPLACE FUNCTION login_user(p_username_or_email VARCHAR, p_password VARCHAR)
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -208,13 +207,11 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
--- Test the login_user function with correct credentials
--- SELECT login_user('ManseChampanse', 'SuperManse123!');
--- -- Test the login_user function with an incorrect password
--- SELECT login_user('ManseChampanse', 'WrongPassword!');
 
+-- ============================================================
+-- D1 Test update_user_password function
+-- ============================================================
 
--- Basic User Password Update Function with password validation.
 CREATE OR REPLACE FUNCTION update_user_password(p_user_id INT, p_new_password VARCHAR)
 RETURNS VOID AS $$
 DECLARE
@@ -255,10 +252,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Test the update_user_password function with a valid user ID and password
--- SELECT update_user_password(1, 'NewStrongPass1!');
+-- ============================================================
+-- D1 update_user_credentials function
+-- ============================================================
 
--- Basic User Email Update Function with email validation.
 CREATE OR REPLACE FUNCTION update_user_credentials(p_user_id INT, p_new_username VARCHAR DEFAULT NULL, p_new_email VARCHAR DEFAULT NULL)
 RETURNS VOID AS $$
 BEGIN
@@ -285,16 +282,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Update only the username
--- SELECT update_user_credentials(1, 'NewUsername', NULL);
+-- ============================================================
+-- D1 delete_user function
+-- ============================================================
 
--- -- Update only the email
--- SELECT update_user_credentials(1, NULL, 'newemail@example.com');
-
--- -- Update both username and email
--- SELECT update_user_credentials(1, 'AnotherUsername', 'anotheremail@example.com');
-
--- Basic User Deletion Function with validation.
 CREATE OR REPLACE FUNCTION delete_user(p_user_id INT)
 RETURNS VOID AS $$
 BEGIN
@@ -308,10 +299,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Test the delete_user function with an existing user ID
--- SELECT delete_user(1);
+-- ============================================================
+-- D1 Test follow_person function
+-- ============================================================
 
--- followed function
 CREATE OR REPLACE FUNCTION follow_person(p_follower_id INT, p_person_id INT)
 RETURNS VOID AS $$
 BEGIN
@@ -335,10 +326,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Test the follow_person function with valid user and person IDs
--- SELECT follow_person(1, 1056); 
+-- ============================================================
+-- D1 unfollow_person function
+-- ============================================================
 
--- unfollowed function
 CREATE OR REPLACE FUNCTION unfollow_person(p_follower_id INT, p_person_id INT)
 RETURNS VOID AS $$
 BEGIN
@@ -356,10 +347,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Test the unfollow_person function with valid user and person IDs
--- SELECT unfollow_person(1, 1056);
+-- ============================================================
+-- D1 bookmark_media function
+-- ============================================================
 
--- Bookmark media function
 CREATE OR REPLACE FUNCTION bookmark_media(p_user_id INT, p_media_id INT, p_note TEXT DEFAULT NULL)
 RETURNS VOID AS $$
 BEGIN
@@ -376,11 +367,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Test the bookmark_media function with valid user and media IDs
--- SELECT bookmark_media(1, 1023, 'Great Series, must watch later!');
--- SELECT bookmark_media(1, 3299, 'Meh! Was decent I suppose...');
+-- ============================================================
+-- D1 move_bookmark_to_completed function
+-- ============================================================
 
--- Move bookmark to completed function
 CREATE OR REPLACE FUNCTION move_bookmark_to_completed(
     p_user_id INT,
     p_media_id INT,
@@ -411,12 +401,11 @@ BEGIN
     WHERE user_id = p_user_id AND media_id = p_media_id;
 END;
 $$ LANGUAGE plpgsql;
--- Test the move_bookmark_to_completed function with valid user and media IDs
--- SELECT move_bookmark_to_completed(1, 1023, 5, 'Amazing movie!');
 
+-- ============================================================
+-- D1 unbookmark media whithout completing it
+-- ============================================================
 
-
--- unbookmark media whithout completing it
 CREATE OR REPLACE FUNCTION unbookmark_media(p_user_id INT, p_media_id INT)
 RETURNS VOID AS $$
 BEGIN
@@ -433,13 +422,14 @@ BEGIN
     WHERE user_id = p_user_id AND media_id = p_media_id;
 END;
 $$ LANGUAGE plpgsql;
--- Test the unbookmark_media function with valid user and media IDs
--- SELECT unbookmark_media(1, 3299);
 
---D2 SIMPLE SEARCH
+-- ============================================================
+-- D2 Test simple_search function
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION simple_search
   (query varchar(100), user_id integer)
-RETURNS TABLE (media_id INTEGER, title TEXT)
+RETURNS TABLE (media_id INTEGER, title TEXT, media_type VARCHAR(50))
 AS $$
 BEGIN
     -- SEARCH HISTORY
@@ -450,14 +440,14 @@ BEGIN
     RETURN QUERY
     WITH 
         search_result AS (
-            SELECT me.media_id
+            SELECT me.media_id, me.imdb_id, me."type" AS media_type
             FROM media AS me
             JOIN title AS ti USING (media_id)
             WHERE ti."name" LIKE '%' || query || '%' 
             OR me.plot LIKE '%' || query || '%'
         )
-    SELECT DISTINCT imdb_id, title, media_type
-    FROM search_result
+    SELECT DISTINCT t.media_id, t."name", sr.media_type
+    FROM search_result AS sr
     JOIN title AS t USING (media_id)
     JOIN title_title_type USING (title_id)
     JOIN title_type AS tt USING (title_type_id)
@@ -466,11 +456,10 @@ END;
 $$
 LANGUAGE 'plpgsql';
 
---D2 TEST
--- SELECT * FROM simple_search('apple',1);
+-- ============================================================
+-- D3 rate function
+-- ============================================================
 
-
---D3 Rating function
 CREATE OR REPLACE FUNCTION rate(p_userid INT, p_imdb_id VARCHAR, p_score NUMERIC, p_review_text TEXT)
 RETURNS VOID AS $$
 DECLARE
@@ -529,25 +518,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- D3 TEST
--- DO $$
--- DECLARE
---     john_id INTEGER;
---     jane_id INTEGER;
--- BEGIN
---     -- Retrieve user IDs for john_doe and jane_doe
---     SELECT user_id INTO john_id FROM "user" WHERE username = 'john_doe';
---     SELECT user_id INTO jane_id FROM "user" WHERE username = 'jane_smith';
+-- ============================================================
+-- D4 Test structured_string_search function
+-- ============================================================
 
---     -- Perform ratings using the rate() function
---     PERFORM rate(john_id, 'tt1375666', 8.0, 'nice'); 
---     PERFORM rate(john_id, 'tt1375666', 9.0, 'super nice'); 
---     PERFORM rate(jane_id, 'tt1375666', 7.0, 'okay');
--- 	PERFORM rate(jane_id, 'tt13729548', 2.0, 'bad');
--- END $$;
-
-
--- D4 Structured string search
 CREATE OR REPLACE FUNCTION structured_string_search (
   p_title VARCHAR(100), 
   p_plot VARCHAR(100), 
@@ -573,13 +547,13 @@ BEGIN
             LEFT JOIN crew_member cr ON m.media_id = cr.media_id
             LEFT JOIN cast_member ca ON m.media_id = ca.media_id
             LEFT JOIN person p ON ca.person_id = p.person_id OR cr.person_id = p.person_id
-            WHERE (t.title ILIKE '%' || p_title || '%' OR t.title IS NULL)
+            WHERE (t.name ILIKE '%' || p_title || '%' OR t.name IS NULL)
                 AND (m.plot ILIKE '%' || p_plot || '%' OR m.plot IS NULL)
                 AND (ca."character" ILIKE '%' || p_character || '%' OR ca."character" IS NULL)
                 AND (p."name" ILIKE '%' || p_person || '%' OR p."name" IS NULL)
         )
-    SELECT DISTINCT imdb_id, title, media_type
-    FROM search_result
+    SELECT DISTINCT t.media_id, title, sr.media_type
+    FROM search_result AS sr
     JOIN title AS t USING (media_id)
     JOIN title_title_type USING (title_id)
     JOIN title_type AS tt USING (title_type_id)
@@ -588,9 +562,9 @@ END;
 $$
 LANGUAGE 'plpgsql';
 
-
---D5
---With a query find actors, movies casted, roles played and their crew job info
+-- ============================================================
+-- D5 With a query find actors, movies casted, roles played and their crew job info
+-- ============================================================
 
 CREATE OR REPLACE FUNCTION structured_string_search_name(
     query VARCHAR(150),
@@ -619,10 +593,10 @@ END;
 $$
 language plpgsql;
 
---TEST
--- SELECT * FROM structured_string_search_name('Jennifer',1);
+-- ============================================================
+-- D6 VIEW
+-- ============================================================
 
--- D6 View to simplify queries for actors and their associated media
 CREATE OR REPLACE VIEW actor_media_view AS
 SELECT 
     p.person_id,
@@ -636,7 +610,10 @@ FROM
 JOIN 
     cast_member cm ON p.person_id = cm.person_id;
 
+-- ============================================================
 -- D6 Function to find the most frequent co-actors of a given actor
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION get_frequent_coplaying_actors(actor_name_input VARCHAR)
 RETURNS TABLE (
     coactor_name VARCHAR,
@@ -667,11 +644,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- D6 TEST
--- SELECT * FROM get_frequent_coplaying_actors('Jennifer Aniston')
--- LIMIT 20;
+-- ============================================================
+-- D7 calculate_name_rating function
+-- ============================================================
 
--- D7
 CREATE OR REPLACE FUNCTION calculate_name_rating() RETURNS VOID AS $$
 BEGIN
     UPDATE person
@@ -697,7 +673,10 @@ BEGIN
     PERFORM calculate_name_rating();
 END $$;
 
+-- ============================================================
 -- D8 List Actors by Popularity
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION list_actors_by_popularity(p_media_id INT)
 RETURNS TABLE (actor_id INT, actor_name TEXT, actor_rating DECIMAL(3, 2)) AS $$
 BEGIN
@@ -711,10 +690,11 @@ BEGIN
     ORDER BY p.name_rating DESC;
 END;
 $$ LANGUAGE plpgsql;
--- Test with a sample media ID
--- SELECT * FROM list_actors_by_popularity(36);
 
+-- ============================================================
 -- D8 List Co-Actors by Popularity for a Given Actor
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION list_co_actors_by_popularity(p_actor_id INT)
 RETURNS TABLE (co_actor_id INT, co_actor_name TEXT, co_actor_rating DECIMAL(6, 2)) AS $$
 BEGIN
@@ -731,14 +711,11 @@ BEGIN
     ORDER BY p2.name_rating DESC;
 END;
 $$ LANGUAGE plpgsql;
--- Test with a sample actor ID
--- SELECT * FROM list_co_actors_by_popularity(64)
--- LIMIT 20;
 
---D9 SIMILAR MOVIES SEARCH
+-- ============================================================
+-- D9 SIMILAR MOVIES SEARCH
+-- ============================================================
 
---FINAL FUNCTION SIMILAR MOVIES
---THIS COMBINES OTHER FUNCTIONS WHICH ARE DECLARED LOWER IN THIS FILE
 CREATE OR REPLACE FUNCTION get_similar_movies(input_media_id INTEGER)
 RETURNS TABLE (
 	media_id INTEGER,
@@ -980,7 +957,11 @@ $$ LANGUAGE plpgsql;
 --SIMPLE SEARCH TEST
 --SELECT * FROM get_similar_movies(6565);
 
+
+-- ============================================================
 -- D10 Frequent person words
+-- ============================================================
+
 -- Create the function 'person_words' to retrieve words associated with a person's titles
 CREATE OR REPLACE FUNCTION person_words(
     p_person_name VARCHAR,
@@ -1001,11 +982,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- D10 TEST
--- SELECT * FROM person_words('Jennifer Aniston', 8);
+-- ============================================================
+-- D11 Function to find titles to match the exact-match querying.
+-- ============================================================
 
-
--- D11 Function to find titles to match the exact-match querying 
 CREATE OR REPLACE FUNCTION exact_match_titles(
     keywords TEXT[]
 )
@@ -1031,11 +1011,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- D11 TEST 
--- SELECT * FROM exact_match_titles(ARRAY['apple','mads','mikkelsen']);
--- SELECT "name" FROM title WHERE media_id=47460;
-
+-- ============================================================
 -- D12 Function to best match querying, ranking and ordering the media.
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION best_match_titles(
     keywords TEXT[]
 )
@@ -1056,15 +1035,15 @@ BEGIN
     JOIN wi ON m.imdb_id = wi.tconst
     JOIN original_titles AS t USING(media_id)
     WHERE wi.word = ANY(keywords)
-    GROUP BY m.media_id, r.title
+    GROUP BY m.media_id, t.title
     ORDER BY match_count DESC;
 END;
 $$ LANGUAGE plpgsql;
 
--- D12 TEST
--- SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
-
+-- ============================================================
 -- D13 Function for word_to_words_querying, ranking and ordering the words
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION word_to_words_query(
     keywords TEXT[]
 )
@@ -1075,7 +1054,7 @@ BEGIN
     WITH matched_titles AS (
         SELECT m.media_id, m.imdb_id
         FROM title AS t
-        JOIN media m ON r.media_id = m.media_id
+        JOIN media m ON t.media_id = m.media_id
         WHERE t."name" ILIKE ANY (ARRAY(SELECT '%' || kw || '%' FROM unnest(keywords) AS kw))
     ),
     
@@ -1094,5 +1073,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- D13 TEST
--- SELECT * FROM word_to_words_query(ARRAY['apple', 'mads', 'mikkelsen']);
+-- ============================================================
+-- End of functions and procedures
+-- ============================================================
