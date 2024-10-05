@@ -645,11 +645,6 @@ SELECT * FROM list_co_actors_by_popularity(64);
 
 
 -- D10 Frequent person words
--- Copy the 'wi' table from the 'original' schema to the 'public' schema
-CREATE TABLE public.wi AS
-SELECT *
-FROM original.wi;
-
 -- Create the function 'person_words' to retrieve words associated with a person's titles
 CREATE OR REPLACE FUNCTION person_words(
     p_person_name VARCHAR,
@@ -678,25 +673,27 @@ SELECT * FROM person_words('Jennifer Aniston', 8);
 CREATE OR REPLACE FUNCTION exact_match_titles(
     keywords TEXT[]
 )
-RETURNS TABLE (media_id INTEGER) AS $$
+RETURNS TABLE (media_id INTEGER, title TEXT) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.media_id
+    -- Find matching media IDs based on keywords in the wi table
+    SELECT m.media_id, r.title
     FROM media m
     JOIN (
+        -- Find tconst in wi where all keywords match
         SELECT tconst
         FROM wi
         WHERE word = ANY(keywords)
         GROUP BY tconst
         HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
-    ) w ON m.imdb_id = w.tconst;
+    ) w ON m.imdb_id = w.tconst
+    JOIN release r ON m.media_id = r.media_id
+    WHERE r.title_type = 'original';
 END;
 $$ LANGUAGE plpgsql;
 
--- D11 TEST 
-SELECT * FROM exact_match_titles(ARRAY['apple','mads','mikkelsen']);
-SELECT title FROM release WHERE media_id=47460;
-
+-- D11 TEST
+SELECT * FROM exact_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
 
 -- D12 Function to best match querying, ranking and ordering the media.
 CREATE OR REPLACE FUNCTION best_match_titles(
