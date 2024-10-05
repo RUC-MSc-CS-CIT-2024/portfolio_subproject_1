@@ -717,3 +717,37 @@ $$ LANGUAGE plpgsql;
 -- D12 TEST
 SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
 SELECT title FROM release WHERE media_id=47460;
+
+
+-- D13 Function for word_to_words_querying, ranking and ordering the words
+CREATE OR REPLACE FUNCTION word_to_words_query(
+    keywords TEXT[]
+)
+RETURNS TABLE (word TEXT, frequency INTEGER) AS $$
+BEGIN
+    RETURN QUERY
+    -- Select matching titles based on the keyword query
+    WITH matched_titles AS (
+        SELECT m.media_id, m.imdb_id
+        FROM release r
+        JOIN media m ON r.media_id = m.media_id
+        WHERE r.title ILIKE ANY (ARRAY(SELECT '%' || kw || '%' FROM unnest(keywords) AS kw))
+    ),
+    
+    -- Select all words from the wi table associated with the matched titles
+    word_frequencies AS (
+        SELECT wi.word, COUNT(*)::INTEGER AS frequency
+        FROM wi
+        JOIN matched_titles mt ON wi.tconst = mt.imdb_id
+        GROUP BY wi.word
+    )
+    
+    -- Return the words and their frequencies, ordered by frequency
+    SELECT wf.word, wf.frequency
+    FROM word_frequencies wf
+    ORDER BY wf.frequency DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- D13 TEST
+SELECT * FROM word_to_words_query(ARRAY['apple', 'mads', 'mikkelsen']);
