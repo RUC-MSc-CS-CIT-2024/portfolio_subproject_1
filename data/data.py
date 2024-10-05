@@ -1,10 +1,8 @@
 import os
 
-# Function to split files
 def split_file(file_path, chunk_size=50 * 1024 * 1024):
     chunk_num = 1
     chunk_files = []
-    
     with open(file_path, 'rb') as file:
         while True:
             chunk = file.read(chunk_size)
@@ -18,7 +16,6 @@ def split_file(file_path, chunk_size=50 * 1024 * 1024):
     print(f"{file_path} has been split into {len(chunk_files)} parts.")
     return chunk_files
 
-# Function to reassemble files
 def reassemble_files(part_files, output_file):
     with open(output_file, 'wb') as outfile:
         for part_file in part_files:
@@ -26,20 +23,14 @@ def reassemble_files(part_files, output_file):
                 outfile.write(infile.read())
     print(f'Reassembled file saved as {output_file}')
 
-# Example usage
-# List of files to split
 files_to_split = ['imdb.backup', 'wi.backup', 'omdb_data.backup']
-
-# Split each file
 for file_path in files_to_split:
     split_file(file_path)
 
-# Reassemble example
 imdb_parts = [f'imdb.backup.part{n}' for n in range(1, 4)]
 wi_parts = [f'wi.backup.part{n}' for n in range(1, 4)]
 omdb_parts = [f'omdb_data.backup.part{n}' for n in range(1, 3)]
 
-# Reassemble the parts into their original files
 reassemble_files(imdb_parts, 'imdb_reassembled.backup')
 reassemble_files(wi_parts, 'wi_reassembled.backup')
 reassemble_files(omdb_parts, 'omdb_data_reassembled.backup')
