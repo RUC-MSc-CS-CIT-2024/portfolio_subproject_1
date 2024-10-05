@@ -699,18 +699,18 @@ SELECT * FROM exact_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
 CREATE OR REPLACE FUNCTION best_match_titles(
     keywords TEXT[]
 )
-RETURNS TABLE (media_id INTEGER, match_count INTEGER) AS $$
+RETURNS TABLE (media_id INTEGER, title TEXT, match_count INTEGER) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.media_id, COUNT(DISTINCT wi.word)::INTEGER AS match_count
+    SELECT m.media_id, r.title, COUNT(DISTINCT wi.word)::INTEGER AS match_count
     FROM media m
     JOIN wi ON m.imdb_id = wi.tconst
+    JOIN release r ON m.media_id = r.media_id AND r.title_type = 'original'
     WHERE wi.word = ANY(keywords)
-    GROUP BY m.media_id
+    GROUP BY m.media_id, r.title
     ORDER BY match_count DESC;
 END;
 $$ LANGUAGE plpgsql;
 
 -- D12 TEST
 SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
-SELECT title FROM release WHERE media_id=47460;
