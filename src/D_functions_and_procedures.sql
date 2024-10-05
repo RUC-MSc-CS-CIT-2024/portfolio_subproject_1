@@ -358,17 +358,26 @@ CREATE OR REPLACE FUNCTION simple_search
 RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
-  -- SEARCH HISTORY
-  INSERT INTO search_history (user_id, type, query)
-  VALUES (user_id, 'simple_search', query);
+    -- SEARCH HISTORY
+    INSERT INTO search_history (user_id, type, query)
+    VALUES (user_id, 'simple_search', query);
 
-  -- RESULT
-  RETURN QUERY
-  SELECT me.media_id, re.title
-  FROM media me 
-  JOIN "release" re USING (media_id)
-  WHERE re.title LIKE '%' || query || '%' 
-     OR me.plot LIKE '%' || query || '%';
+    -- RESULT
+    RETURN QUERY
+    WITH 
+        search_result AS (
+            SELECT me.media_id
+            FROM media AS me
+            JOIN title AS ti USING (media_id)
+            WHERE ti."name" LIKE '%' || query || '%' 
+            OR me.plot LIKE '%' || query || '%'
+        )
+    SELECT DISTINCT imdb_id, title, media_type
+    FROM search_result
+    JOIN title AS t USING (media_id)
+    JOIN title_title_type USING (title_id)
+    JOIN title_type AS tt USING (title_type_id)
+    WHERE tt."name" = 'original';
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -465,30 +474,32 @@ CREATE OR REPLACE FUNCTION structured_string_search (
 RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
-  -- SEARCH HISTORY
-  INSERT INTO search_history (user_id, "type", query)
-  VALUES (p_user_id, 'structured_string_search', 
-          FORMAT('title: "%s", plot: "%s", character: "%s", person: "%s"', p_title, p_plot, p_character, p_person));
+    -- SEARCH HISTORY
+    INSERT INTO search_history (user_id, "type", query)
+    VALUES (p_user_id, 'structured_string_search', 
+        FORMAT('title: "%s", plot: "%s", character: "%s", person: "%s"', p_title, p_plot, p_character, p_person));
 
-  -- RESULT
-  RETURN QUERY
-  WITH
-    search_result AS (
-        SELECT DISTINCT m.media_id, m.imdb_id, m."type" AS media_type
-        FROM media AS m
-        JOIN "release" r USING (media_id)
-        LEFT JOIN crew_member cr ON m.media_id = cr.media_id
-        LEFT JOIN cast_member ca ON m.media_id = ca.media_id
-        LEFT JOIN person p ON ca.person_id = p.person_id OR cr.person_id = p.person_id
-        WHERE (r.title ILIKE '%' || p_title || '%' OR r.title IS NULL)
-            AND (m.plot ILIKE '%' || p_plot || '%' OR m.plot IS NULL)
-            AND (ca."character" ILIKE '%' || p_character || '%' OR ca."character" IS NULL)
-            AND (p."name" ILIKE '%' || p_person || '%' OR p."name" IS NULL)
-    )
-  SELECT DISTINCT imdb_id, title, media_type
-  FROM search_result
-  JOIN "release" USING (media_id)
-  WHERE title_type = 'original';
+    -- RESULT
+    RETURN QUERY
+    WITH
+        search_result AS (
+            SELECT DISTINCT m.media_id, m.imdb_id, m."type" AS media_type
+            FROM media AS m
+            JOIN title AS t USING (media_id)
+            LEFT JOIN crew_member cr ON m.media_id = cr.media_id
+            LEFT JOIN cast_member ca ON m.media_id = ca.media_id
+            LEFT JOIN person p ON ca.person_id = p.person_id OR cr.person_id = p.person_id
+            WHERE (t.title ILIKE '%' || p_title || '%' OR t.title IS NULL)
+                AND (m.plot ILIKE '%' || p_plot || '%' OR m.plot IS NULL)
+                AND (ca."character" ILIKE '%' || p_character || '%' OR ca."character" IS NULL)
+                AND (p."name" ILIKE '%' || p_person || '%' OR p."name" IS NULL)
+        )
+    SELECT DISTINCT imdb_id, title, media_type
+    FROM search_result
+    JOIN title AS t USING (media_id)
+    JOIN title_title_type USING (title_id)
+    JOIN title_type AS tt USING (title_type_id)
+    WHERE tt."name" = 'original';
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -690,7 +701,7 @@ $$ LANGUAGE plpgsql;
 
 -- D11 TEST 
 SELECT * FROM exact_match_titles(ARRAY['apple','mads','mikkelsen']);
-SELECT title FROM release WHERE media_id=47460;
+SELECT "name" FROM title WHERE media_id=47460;
 
 
 -- D12 Function to best match querying, ranking and ordering the media.
@@ -711,7 +722,7 @@ $$ LANGUAGE plpgsql;
 
 -- D12 TEST
 SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
-SELECT title FROM release WHERE media_id=47460;
+SELECT "name" FROM title WHERE media_id=47460;
 
 
 -- D13 Function for word_to_words_querying, ranking and ordering the words
@@ -724,9 +735,9 @@ BEGIN
     -- Select matching titles based on the keyword query
     WITH matched_titles AS (
         SELECT m.media_id, m.imdb_id
-        FROM release r
+        FROM title AS t
         JOIN media m ON r.media_id = m.media_id
-        WHERE r.title ILIKE ANY (ARRAY(SELECT '%' || kw || '%' FROM unnest(keywords) AS kw))
+        WHERE t."name" ILIKE ANY (ARRAY(SELECT '%' || kw || '%' FROM unnest(keywords) AS kw))
     ),
     
     -- Select all words from the wi table associated with the matched titles
