@@ -1,7 +1,6 @@
 DROP TABLE IF EXISTS search_history CASCADE;
 DROP TABLE IF EXISTS bookmark CASCADE;
 DROP TABLE IF EXISTS completed CASCADE;
-DROP TABLE IF EXISTS plan_to_watch CASCADE;
 DROP TABLE IF EXISTS "following" CASCADE;
 DROP TABLE IF EXISTS user_score CASCADE;
 DROP TABLE IF EXISTS "user" CASCADE;
@@ -56,7 +55,7 @@ CREATE TABLE "following" (
 DO $$
 DECLARE
     new_user_id INTEGER;
-BEING
+BEGIN
     INSERT INTO "user" (username, password, email) 
     VALUES ('john_doe', 'password123', 'john@example.com')
     RETURNING user_id INTO new_user_id;
@@ -76,12 +75,12 @@ BEING
     INSERT INTO user_score (user_id, media_id, score_value, review_text) VALUES
     (new_user_id, 301, 9, 'Brilliant storytelling and visuals'),
     (new_user_id, 304, 10, 'One of the best movies I have ever seen!');
-END &&;
+END $$;
 
 DO $$
 DECLARE
     new_user_id INTEGER;
-BEING
+BEGIN
     INSERT INTO "user" (username, password, email) 
     VALUES ('jane_smith', 'password456', 'jane@example.com')
     RETURNING user_id INTO new_user_id;
@@ -104,7 +103,7 @@ END $$;
 DO $$
 DECLARE
     new_user_id INTEGER;
-BEING
+BEGIN
     INSERT INTO "user" (username, password, email) 
     VALUES ('mike_jones', 'password789', 'mike@example.com')
     RETURNING user_id INTO new_user_id;
