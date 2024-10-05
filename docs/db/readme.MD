@@ -1,1 +1,0 @@
-Database Documentation. Maybe this could be a living document as we go, think it would be nice to at least have a place for some of the arguments for certain design choices.
