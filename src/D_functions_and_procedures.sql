@@ -429,7 +429,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION simple_search
   (query varchar(100), user_id integer)
-RETURNS TABLE (media_id INTEGER, title TEXT, media_type VARCHAR(50))
+RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
     -- SEARCH HISTORY
@@ -440,13 +440,13 @@ BEGIN
     RETURN QUERY
     WITH 
         search_result AS (
-            SELECT me.media_id, me.imdb_id, me."type" AS media_type
+            SELECT me.media_id, me.imdb_id
             FROM media AS me
             JOIN title AS ti USING (media_id)
             WHERE ti."name" LIKE '%' || query || '%' 
             OR me.plot LIKE '%' || query || '%'
         )
-    SELECT DISTINCT t.media_id, t."name", sr.media_type
+    SELECT DISTINCT t.media_id, t."name"
     FROM search_result AS sr
     JOIN title AS t USING (media_id)
     JOIN title_title_type USING (title_id)
@@ -541,18 +541,18 @@ BEGIN
     RETURN QUERY
     WITH
         search_result AS (
-            SELECT DISTINCT m.media_id, m.imdb_id, m."type" AS media_type
+            SELECT DISTINCT m.media_id, m.imdb_id
             FROM media AS m
             JOIN title AS t USING (media_id)
             LEFT JOIN crew_member cr ON m.media_id = cr.media_id
             LEFT JOIN cast_member ca ON m.media_id = ca.media_id
             LEFT JOIN person p ON ca.person_id = p.person_id OR cr.person_id = p.person_id
-            WHERE (t.name ILIKE '%' || p_title || '%' OR t.name IS NULL)
-                AND (m.plot ILIKE '%' || p_plot || '%' OR m.plot IS NULL)
-                AND (ca."character" ILIKE '%' || p_character || '%' OR ca."character" IS NULL)
-                AND (p."name" ILIKE '%' || p_person || '%' OR p."name" IS NULL)
+            WHERE (p_title IS NULL OR t."name" ILIKE '%' || p_title || '%')
+                AND (p_plot IS NULL OR m.plot ILIKE '%' || p_plot || '%')
+                AND (p_character IS NULL OR ca."character" ILIKE '%' || p_character || '%')
+                AND (p_user_id IS NULL OR p."name" ILIKE '%' || p_person || '%')
         )
-    SELECT DISTINCT t.media_id, title, sr.media_type
+    SELECT DISTINCT t.media_id, t."name"
     FROM search_result AS sr
     JOIN title AS t USING (media_id)
     JOIN title_title_type USING (title_id)
