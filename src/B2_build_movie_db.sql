@@ -580,69 +580,63 @@ JOIN genre AS g ON "name" = genre_name;
 -- Insert title for media
 DO $$
 DECLARE
-    new_title_id INTEGER;
     current_title RECORD;
-    current_title_type RECORD;
-    current_title_attribute RECORD;
     insert_count INTEGER := 0; -- Initialize the counter
+    original_title_id INTEGER := (SELECT title_type_id FROM title_type WHERE "name" = 'original');
 BEGIN
     FOR current_title IN
-        SELECT ta.title, m.media_id, ta.region, ta.types, ta.attributes, ta.language, t.primarytitle, t.originaltitle
-        FROM original.title_akas AS ta
-        JOIN media AS m ON m.imdb_id = ta.titleid
-        JOIN original.title_basics AS t ON t.tconst = ta.titleid
+        WITH 
+            titles_with_id AS (
+                SELECT ta.title, m.media_id, c.country_id, ta."types", ta.attributes, l.language_id, t.primarytitle, t.originaltitle
+                FROM original.title_akas AS ta
+                JOIN media AS m ON m.imdb_id = ta.titleid
+                JOIN original.title_basics AS t ON t.tconst = ta.titleid
+                JOIN "language" AS l ON l.imdb_language_code = ta."language"
+                JOIN country AS c ON c.imdb_country_code = ta.region
+            ),
+            inserted_titles AS (
+                INSERT INTO title ("name", country_id, language_id, media_id)
+                SELECT title, country_id, language_id, media_id
+                FROM titles_with_id
+                RETURNING *
+            )
+        SELECT it.title_id, t."types", t.attributes, t.title, t.originaltitle
+        FROM inserted_titles AS it
+        JOIN titles_with_id AS t 
+            ON t.media_id = it.media_id
+            AND t.title = it."name"
+            AND t.country_id = it.country_id
+            AND t.language_id = it.language_id
     LOOP
-        INSERT INTO title ("name", country_id, language_id, media_id)
-        VALUES 
-            (current_title.title,
-            (CASE 
-                WHEN current_title.region = '' THEN NULL
-                ELSE (SELECT country_id FROM country WHERE imdb_country_code = current_title.region)
-            END),
-            (CASE 
-                WHEN current_title.language = '' THEN NULL
-                ELSE (SELECT language_id FROM "language" WHERE imdb_language_code = current_title.language)
-            END), 
-            current_title.media_id)
-        RETURNING title_id INTO new_title_id;
+        WITH
+            title_types_names AS (
+                SELECT unnest(string_to_array(current_title.types, '')) AS type_name
+            ),
+            title_type_with_id AS (
+                SELECT tt.title_type_id, tt."name"
+                FROM title_types_names AS ttn
+                JOIN title_type AS tt ON tt."name" = ttn.type_name
+            )
+        INSERT INTO title_title_type (title_id, title_type_id)
+        SELECT current_title.title_id, title_type_id
+        FROM title_type_with_id;
 
-        insert_count := insert_count + 1;
-
-        FOR current_title_type IN 
-            WITH
-                title_types_names AS (
-                    SELECT unnest(string_to_array(current_title.types, '')) AS type_name
-                )
-            SELECT tt.title_type_id, tt."name"
-            FROM title_types_names AS ttn
-            JOIN title_type AS tt ON tt."name" = ttn.type_name
-        LOOP
-            INSERT INTO title_title_type (title_id, title_type_id)
-            VALUES (new_title_id, current_title_type.title_type_id);
-
-            insert_count := insert_count + 1;
-        END LOOP;
-
-        FOR current_title_attribute IN 
-            WITH
-                title_attribute_names AS (
-                    SELECT unnest(string_to_array(current_title.attributes, '')) AS attribute_name
-                )
-            SELECT ta.title_attribute_id, ta."name"
-            FROM title_attribute_names
-            JOIN title_attribute AS ta ON "name" = attribute_name
-        LOOP
-            INSERT INTO title_title_attribute (title_id, title_attribute_id)
-            VALUES (new_title_id, current_title_attribute.title_attribute_id);
-
-            insert_count := insert_count + 1;
-        END LOOP;
+        WITH
+            title_attribute_names AS (
+                SELECT unnest(string_to_array(current_title.attributes, '')) AS attribute_name
+            ),
+            title_attribute_with_id AS (
+                SELECT ta.title_attribute_id, ta."name"
+                FROM title_attribute_names
+                JOIN title_attribute AS ta ON "name" = attribute_name
+            )
+        INSERT INTO title_title_attribute (title_id, title_attribute_id)
+        SELECT current_title.title_id, title_attribute_id
+        FROM title_attribute_with_id;
 
         IF current_title.originaltitle = current_title.title THEN
             INSERT INTO title_title_type (title_id, title_type_id)
-            VALUES (new_title_id, (SELECT title_type_id FROM title_type WHERE "name" = 'original'));
-
-            insert_count := insert_count + 1;
+            VALUES (current_title.title_id, original_title_id);
         END IF;
     END LOOP;
 END $$;
@@ -820,11 +814,10 @@ WHERE release.media_id = m.media_id;
 -- Update or create release release_date
 WITH 
     omdb_with_release AS (
-        SELECT m.media_id, o.released
+        SELECT m.media_id, o.released, o.rated
         FROM media AS m
         JOIN original.omdb_data AS o ON m.imdb_id = o.tconst
-        WHERE r.release_date IS NULL
-            AND o.released != 'N/A' 
+        WHERE o.released != 'N/A' 
             AND o.released != ''
     ),
     updated AS (
@@ -836,10 +829,9 @@ WITH
         RETURNING release.media_id
 )
 INSERT INTO release (release_date, media_id, rated)
-SELECT o.released::DATE, media.media_id, o.rated
+SELECT o.released::DATE, o.media_id, o.rated
 FROM omdb_with_release AS o
-LEFT JOIN updated AS u ON u.media_id = o.media_id
-WHERE media.media_id NOT IN u.media_id;
+WHERE media.media_id NOT IN (SELECT u.media_id FROM updated AS u);
 
 -- Create posters
 INSERT INTO promotional_media(release_id, "type", uri)
