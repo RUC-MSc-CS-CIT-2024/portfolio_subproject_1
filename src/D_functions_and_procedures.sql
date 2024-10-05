@@ -651,11 +651,6 @@ SELECT * FROM list_co_actors_by_popularity(64);
 
 
 -- D10 Frequent person words
--- Copy the 'wi' table from the 'original' schema to the 'public' schema
-CREATE TABLE public.wi AS
-SELECT *
-FROM original.wi;
-
 -- Create the function 'person_words' to retrieve words associated with a person's titles
 CREATE OR REPLACE FUNCTION person_words(
     p_person_name VARCHAR,
@@ -684,18 +679,26 @@ SELECT * FROM person_words('Jennifer Aniston', 8);
 CREATE OR REPLACE FUNCTION exact_match_titles(
     keywords TEXT[]
 )
-RETURNS TABLE (media_id INTEGER) AS $$
+RETURNS TABLE (media_id INTEGER, title TEXT) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.media_id
+    -- Find matching media IDs based on keywords in the wi table
+    WITH
+        imdb_ids_with_word AS (
+            SELECT tconst AS imdb_id
+            FROM wi
+            WHERE word = ANY(keywords)
+            GROUP BY tconst
+            HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
+        )
+    SELECT m.media_id, t."name" AS title
     FROM media m
-    JOIN (
-        SELECT tconst
-        FROM wi
-        WHERE word = ANY(keywords)
-        GROUP BY tconst
-        HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
-    ) w ON m.imdb_id = w.tconst;
+    JOIN imdb_ids_with_word USING(imdb_id)
+    JOIN title AS t USING(media_id)
+    JOIN title_title_type USING(title_id)
+    JOIN title_type AS tt using(title_type_id)
+    WHERE ttt.title_type = 'original';
+    WHERE tt."name" = 'original';
 END;
 $$ LANGUAGE plpgsql;
 
@@ -703,19 +706,28 @@ $$ LANGUAGE plpgsql;
 SELECT * FROM exact_match_titles(ARRAY['apple','mads','mikkelsen']);
 SELECT "name" FROM title WHERE media_id=47460;
 
-
 -- D12 Function to best match querying, ranking and ordering the media.
 CREATE OR REPLACE FUNCTION best_match_titles(
     keywords TEXT[]
 )
-RETURNS TABLE (media_id INTEGER, match_count INTEGER) AS $$
+RETURNS TABLE (media_id INTEGER, title TEXT, match_count INTEGER) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.media_id, COUNT(DISTINCT wi.word)::INTEGER AS match_count
-    FROM media m
+    WITH
+        original_titles AS (
+            SELECT DISTINCT m.media_id, t."name" AS title
+            FROM media m
+            JOIN title AS t USING(media_id)
+            JOIN title_title_type USING(title_id)
+            JOIN title_type AS tt USING(title_type_id)
+            WHERE tt."name" = 'original'
+        )
+    SELECT m.media_id, t.title, COUNT(DISTINCT wi.word)::INTEGER AS match_count
+    FROM media AS m
     JOIN wi ON m.imdb_id = wi.tconst
+    JOIN original_titles AS t USING(media_id)
     WHERE wi.word = ANY(keywords)
-    GROUP BY m.media_id
+    GROUP BY m.media_id, r.title
     ORDER BY match_count DESC;
 END;
 $$ LANGUAGE plpgsql;
@@ -723,7 +735,6 @@ $$ LANGUAGE plpgsql;
 -- D12 TEST
 SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']);
 SELECT "name" FROM title WHERE media_id=47460;
-
 
 -- D13 Function for word_to_words_querying, ranking and ordering the words
 CREATE OR REPLACE FUNCTION word_to_words_query(
