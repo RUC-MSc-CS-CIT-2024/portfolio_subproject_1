@@ -99,6 +99,8 @@ Portfolio Subproject made for the CIT 2024 course
 - Title Type
 	- *The different types of release, e.g., DVD, premiere.*
 
+### Title
+
 ### Score
 *An overview of the scores for a specific media.*
 
