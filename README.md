@@ -17,7 +17,7 @@ This guide covers **Subproject 1: Database**, focusing on setting up the databas
   - `omdb_data.backup`
   - `wi.backup`
 
-The backup files can be located in the `data` folder.
+The backup files can be located in the `data` folder. They are currently split, and can be reassembled again by running the python script `data.py`.
 
 ---
 

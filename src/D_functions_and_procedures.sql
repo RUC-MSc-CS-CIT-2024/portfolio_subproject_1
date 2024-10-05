@@ -713,7 +713,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================
--- D9 SIMILAR MOVIES SEARCH
+-- D9 SImiliar Movies Search Functions
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION get_similar_movies(input_media_id INTEGER)
@@ -867,6 +867,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 --find_movies_with_similar_crew()
+
 CREATE OR REPLACE FUNCTION get_movies_with_similar_crew(input_media_id INTEGER)
 RETURNS TABLE(
 	media_id INTEGER,
@@ -946,17 +947,6 @@ BEGIN
 	
 END;
 $$ LANGUAGE plpgsql;
-
---TEST-D9
---SEPARATE SEARCH FUNCTIONS
---SELECT * FROM get_count_of_movies_with_same_actors(7);
---SELECT * FROM find_movies_from_the_same_country(173);
---SELECT * FROM find_movie_similar_titles('Escape from prison',3);
---SELECT * FROM find_movies_with_similar_crew(15647);
---SELECT * FROM get_movies_with_same_genre(6565);
---SIMPLE SEARCH TEST
---SELECT * FROM get_similar_movies(6565);
-
 
 -- ============================================================
 -- D10 Frequent person words
