@@ -89,7 +89,7 @@ psql -U postgres -d movie -f D_functions_and_procedures.sql
 To ensure that everything is working correctly, run the test script:
 
 ```bash
-psql -U postgres -d movie -f test_functions.sql
+psql -U postgres -d movie -f test_functions.sql -o test_output_file.txt -v ON_ERROR_STOP=1 -q --echo-all --set=timing=on
 ```
 
 - **Purpose**: Tests the functions and procedures defined in the D script, ensuring they operate correctly with the imported data.

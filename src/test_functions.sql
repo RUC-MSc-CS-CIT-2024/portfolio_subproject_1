@@ -312,11 +312,10 @@ SELECT * FROM list_co_actors_by_popularity(64) LIMIT 10;
 -- ============================================================
 
 SELECT * FROM get_count_of_movies_with_same_actors(7);
-SELECT * FROM find_movies_from_the_same_country(173);
-SELECT * FROM find_movie_similar_titles('Escape from prison',3);
-SELECT * FROM find_movies_with_similar_crew(15647);
+SELECT * FROM get_movies_from_the_same_country(173);
+SELECT * FROM get_movies_with_similar_titles('Escape from prison',3);
+SELECT * FROM get_movies_with_similar_crew(15647);
 SELECT * FROM get_movies_with_same_genre(6565);
-SIMPLE SEARCH TEST
 SELECT * FROM get_similar_movies(6565);
 
 -- ============================================================
