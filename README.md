@@ -1,16 +1,168 @@
-# portfolio_subproject_1  
-Portfolio Subproject made for the CIT 2024 course
+# Subproject 1: Database
 
+## Overview
+
+This project is part of a Complex IT Systems practice course. The goal is to build a multi-user movie database that allows users to search for, browse, rate, and compare movies and actors. It supports features like tracking search history, rating, and bookmarking movies. The project is divided into multiple subprojects, focusing on database creation, backend services, and frontend interfaces.
+
+This guide covers **Subproject 1: Database**, focusing on setting up the database, importing data, and implementing core functionalities.
+
+---
+
+## Prerequisites
+
+- **PostgreSQL** installed on your system.
+- Command-line psql.
+- The following backup files:
+  - `imdb.backup`
+  - `omdb_data.backup`
+  - `wi.backup`
+
+The backup files can be located in the `data` folder. They are currently split, and can be reassembled again by running the python script `data.py`.
+
+---
+
+## Step 1: Importing Data
+
+We start by importing the three key datasets into your PostgreSQL database:
+
+1. **IMDb Backup** – Contains movie and actor data.
+2. **OMDb Backup** – Supplements the IMDb data with additional metadata like posters and plot descriptions.
+3. **Word Index Backup** – Provides an inverted index for efficient searches based on movie titles, plots, characters, and actor names.
+
+### Commands to Run
+
+Open your terminal and navigate to the directory where the backup files are stored. Run the following commands:
+
+```bash
+psql -U postgres -c "create database movie"
+psql -U postgres -d movie -f imdb.backup
+psql -U postgres -d movie -f omdb_data.backup
+psql -U postgres -d movie -f wi.backup
+```
+
+#### Backup File Details
+
+- **`imdb.backup`**: A reduced IMDb dataset containing around 130,000 movies and 470,000 personalities. It includes basic information about titles, cast, crew, and ratings.
+- **`omdb_data.backup`**: Supplementary data from the Open Movie Database (OMDb), including unique features like movie posters and plot descriptions.
+- **`wi.backup`**: An inverted index for faster lookups based on textual data like titles, plots, character names, and actor names.
+
+---
+
+## Step 2: Running SQL Scripts
+
+After importing the data, run the following scripts in sequence to build the database structure and implement the required functionalities.
+
+### 1. **B2 Script: Building the Core Database**
+
+Run the B2 script to build the core database structure, including tables and relationships:
+
+```bash
+psql -U postgres -d movie -f B2_build_movie_db.sql
+```
+
+- **Purpose**: Creates the essential tables and constraints for managing the movie data in your database.
+
+### 2. **C2 Script: Adding the Framework**
+
+Execute the C2 script, which adds a framework for managing additional features like user interactions, ratings, and search history:
+
+```bash
+psql -U postgres -d movie -f C2_build_framework.sql
+```
+
+- **Purpose**: Adds user-related features and functionalities, such as the ability to bookmark, rate, and plan to watch movies.
+
+### 3. **D Script: Implementing Functions and Procedures**
+
+Now, execute the D script, which contains all the functions and stored procedures for managing the movie data and user interactions:
+
+```bash
+psql -U postgres -d movie -f D_functions_and_procedures.sql
+```
+
+- **Purpose**: Contains advanced functions that allow users to search for movies, manage their ratings, and interact with the movie data in various ways.
+
+---
+
+## Step 3: Testing the Database Functionality
+
+To ensure that everything is working correctly, run the test script:
+
+```bash
+psql -U postgres -d movie -f test_functions.sql -o test_output_file.txt -v ON_ERROR_STOP=1 -q --echo-all --set=timing=on
+```
+
+- **Purpose**: Tests the functions and procedures defined in the D script, ensuring they operate correctly with the imported data.
+
+---
+
+## Detailed Breakdown of the Files
+
+### Backup Files
+
+1. **`imdb.backup`**
+   - **Purpose**: Contains the IMDb dataset, which includes movies, actors, directors, and other metadata.
+   - **Tables Included**:
+     - `title_basics`: Basic information about movie titles.
+     - `title_principals`: Cast and crew details.
+     - `title_ratings`: Movie ratings.
+
+2. **`omdb_data.backup`**
+   - **Purpose**: Holds additional metadata from OMDb, such as external ratings, reviews, or movie details.
+   - **Additional Data**:
+     - `poster`: Links to movie posters.
+     - `plot`: Plot descriptions of movies.
+
+3. **`wi.backup`**
+   - **Purpose**: Provides an inverted index for text-based search functionality.
+   - **Includes**:
+     - Words from movie titles, plot descriptions, character names, and actor names.
+
+### SQL Scripts
+
+1. **`B2_build_movie_db.sql`**
+   - **Purpose**: Builds the core database structure, including tables for storing movie data.
+   - **Key Tables**: Titles, ratings, and other essential data.
+
+2. **`C2_build_framework.sql`**
+   - **Purpose**: Adds user-related features, allowing for user-specific data like ratings, bookmarks, and planned-to-watch lists.
+   - **Key Features**: User management, bookmarking functionality, and search history tracking.
+
+3. **`D_functions_and_procedures.sql`**
+   - **Purpose**: Defines functions and procedures to manage the database, including search functionalities and user interactions.
+   - **Key Functions**:
+     - Search for movies based on titles or plot keywords.
+     - Rate movies and track user interactions.
+     - Retrieve bookmarked titles and rating history.
+
+4. **`test_functions.sql`**
+   - **Purpose**: Tests the functions and procedures created in the D script to ensure they are working correctly.
+   - **Functionality**: Runs sample queries and verifies that results are correct.
+
+---
+
+## Future Steps
+
+In the subsequent subprojects, we will focus on:
+
+- **Subproject 2**: Implementing backend services that allow for data manipulation via APIs.
+- **Subproject 3**: Developing a frontend to interact with the backend services, creating a user-friendly web application.
+
+---
 
 ## Entity Relationship diagram
 
-### Core Data Model
-
 ![ER diagram for core data model](ER_diagram_core_data.svg)
+
+---
 
 ## Domain Model
 
+---
+
 ![Domain Model](domain_model.drawio.png)
+
+---
 
 ## Term Glossary
 
