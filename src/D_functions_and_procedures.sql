@@ -672,18 +672,22 @@ RETURNS TABLE (media_id INTEGER, title TEXT) AS $$
 BEGIN
     RETURN QUERY
     -- Find matching media IDs based on keywords in the wi table
-    SELECT m.media_id, r.title
+    WITH
+        imdb_ids_with_word AS (
+            SELECT tconst AS imdb_id
+            FROM wi
+            WHERE word = ANY(keywords)
+            GROUP BY tconst
+            HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
+        )
+    SELECT m.media_id, t."name" AS title
     FROM media m
-    JOIN (
-        -- Find tconst in wi where all keywords match
-        SELECT tconst
-        FROM wi
-        WHERE word = ANY(keywords)
-        GROUP BY tconst
-        HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
-    ) w ON m.imdb_id = w.tconst
-    JOIN release r ON m.media_id = r.media_id
-    WHERE r.title_type = 'original';
+    JOIN imdb_ids_with_word USING(imdb_id)
+    JOIN title AS t USING(media_id)
+    JOIN title_title_type USING(title_id)
+    JOIN title_type AS tt using(title_type_id)
+    WHERE ttt.title_type = 'original';
+    WHERE tt."name" = 'original';
 END;
 $$ LANGUAGE plpgsql;
 
@@ -697,10 +701,19 @@ CREATE OR REPLACE FUNCTION best_match_titles(
 RETURNS TABLE (media_id INTEGER, title TEXT, match_count INTEGER) AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.media_id, r.title, COUNT(DISTINCT wi.word)::INTEGER AS match_count
-    FROM media m
+    WITH
+        original_titles AS (
+            SELECT DISTINCT m.media_id, t."name" AS title
+            FROM media m
+            JOIN title AS t USING(media_id)
+            JOIN title_title_type USING(title_id)
+            JOIN title_type AS tt USING(title_type_id)
+            WHERE tt."name" = 'original'
+        )
+    SELECT m.media_id, t.title, COUNT(DISTINCT wi.word)::INTEGER AS match_count
+    FROM media AS m
     JOIN wi ON m.imdb_id = wi.tconst
-    JOIN release r ON m.media_id = r.media_id AND r.title_type = 'original'
+    JOIN original_titles AS t USING(media_id)
     WHERE wi.word = ANY(keywords)
     GROUP BY m.media_id, r.title
     ORDER BY match_count DESC;
