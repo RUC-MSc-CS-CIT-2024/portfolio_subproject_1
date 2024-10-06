@@ -210,7 +210,7 @@ SELECT * FROM bookmark WHERE user_id = (SELECT user_id FROM "user" WHERE usernam
 -- ============================================================
 
 -- Perform a simple search
-SELECT * FROM simple_search('apple', 1);
+SELECT * FROM simple_search('apple', 1) LIMIT 10;
 
 -- ============================================================
 -- D3 Test rate function
