@@ -62,7 +62,6 @@ CREATE TABLE media (
     box_office  INTEGER         NULL,
     budget      INTEGER         NULL,
     imdb_id     VARCHAR(10)     NULL,
-    website     VARCHAR(100)    NULL,
     awards      VARCHAR(80)     NULL
 );
 
@@ -791,10 +790,6 @@ SET plot = (CASE
         WHEN REPLACE(TRIM('$' FROM o.boxoffice), ',', '') = 'N/A' THEN NULL 
         ELSE REPLACE(TRIM('$' FROM o.boxoffice), ',', '') 
         END AS INTEGER),
-    website = (CASE
-		WHEN o.website= 'N/A' THEN NULL
-		WHEN o.website= '' THEN NULL 
-        ELSE o.website END),
     awards = (CASE
 		WHEN o.awards= 'N/A' THEN NULL
 		WHEN o.awards= '' THEN NULL 
