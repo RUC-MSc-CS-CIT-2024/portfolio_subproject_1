@@ -62,7 +62,6 @@ CREATE TABLE media (
     box_office  INTEGER         NULL,
     budget      INTEGER         NULL,
     imdb_id     VARCHAR(10)     NULL,
-    website     VARCHAR(100)    NULL,
     awards      VARCHAR(80)     NULL
 );
 
