@@ -311,12 +311,12 @@ SELECT * FROM list_co_actors_by_popularity(64) LIMIT 10;
 -- D9 SImiliar Movies Search Functions
 -- ============================================================
 
-SELECT * FROM get_count_of_movies_with_same_actors(7);
-SELECT * FROM get_movies_from_the_same_country(173);
-SELECT * FROM get_movies_with_similar_titles('Escape from prison',3);
-SELECT * FROM get_movies_with_similar_crew(15647);
-SELECT * FROM get_movies_with_same_genre(6565);
-SELECT * FROM get_similar_movies(6565);
+SELECT * FROM get_count_of_movies_with_same_actors(7) LIMIT 10;
+SELECT * FROM get_movies_from_the_same_country(173) LIMIT 10;
+SELECT * FROM get_movies_with_similar_titles('Escape from prison',3) LIMIT 10;
+SELECT * FROM get_movies_with_similar_crew(15647) LIMIT 10;
+SELECT * FROM get_movies_with_same_genre(6565) LIMIT 10;
+SELECT * FROM get_similar_movies(6565) LIMIT 10;
 
 -- ============================================================
 -- D10 Test person_words function
@@ -332,18 +332,12 @@ SELECT * FROM person_words('Jennifer Aniston', 8) LIMIT 10;
 -- Perform exact match title search
 SELECT * FROM exact_match_titles(ARRAY['apple', 'mads', 'mikkelsen']) LIMIT 10;
 
--- Display titles for returned media_ids
-SELECT "name" FROM title WHERE media_id IN (SELECT media_id FROM exact_match_titles(ARRAY['apple', 'mads', 'mikkelsen'])) LIMIT 10;
-
 -- ============================================================
 -- D12 Test best_match_titles function
 -- ============================================================
 
 -- Perform best match title search
 SELECT * FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen']) LIMIT 10;
-
--- Display titles for returned media_ids
-SELECT "name" FROM title WHERE media_id IN (SELECT media_id FROM best_match_titles(ARRAY['apple', 'mads', 'mikkelsen'])) LIMIT 10;
 
 -- ============================================================
 -- D13 Test word_to_words_query function
