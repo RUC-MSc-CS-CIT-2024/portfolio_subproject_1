@@ -790,10 +790,6 @@ SET plot = (CASE
         WHEN REPLACE(TRIM('$' FROM o.boxoffice), ',', '') = 'N/A' THEN NULL 
         ELSE REPLACE(TRIM('$' FROM o.boxoffice), ',', '') 
         END AS INTEGER),
-    website = (CASE
-		WHEN o.website= 'N/A' THEN NULL
-		WHEN o.website= '' THEN NULL 
-        ELSE o.website END),
     awards = (CASE
 		WHEN o.awards= 'N/A' THEN NULL
 		WHEN o.awards= '' THEN NULL 
