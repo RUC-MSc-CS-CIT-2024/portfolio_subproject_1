@@ -584,7 +584,6 @@ FROM titles_with_id;
 DO $$
 DECLARE
     current_title RECORD;
-    insert_count INTEGER := 0; -- Initialize the counter
     original_title_id INTEGER := (SELECT title_type_id FROM title_type WHERE "name" = 'original');
 BEGIN
     FOR current_title IN
@@ -664,7 +663,6 @@ DECLARE
     new_season_id INTEGER;
     new_title_id INTEGER;
     current_season RECORD;
-    insert_count INTEGER := 0; -- Initialize the counter
 BEGIN
     -- Insert seasons for media
     FOR current_season IN
@@ -684,14 +682,10 @@ BEGIN
         INSERT INTO media ("type")
         VALUES ('tvSeason')
         RETURNING media_id INTO new_season_id; 
-
-        insert_count := insert_count + 1;
         
         -- Insert season data for new media record
         INSERT INTO season (media_id, "status", season_number, series_id)
         VALUES (new_season_id, 'unknown', current_season.season_number, current_season.media_id);
-
-        insert_count := insert_count + 1;
 
         -- Create title for season ('{series_title} - Season {season_number}')
         INSERT INTO title ("name", media_id)
@@ -700,22 +694,13 @@ BEGIN
             new_season_id)
         RETURNING title_id INTO new_title_id;
 
-        insert_count := insert_count + 1;
-
         INSERT INTO title_title_type(title_id, title_type_id)
         VALUES (new_title_id, (SELECT title_type_id FROM title_type WHERE "name" = 'alternative'));
-        
-        insert_count := insert_count + 1;
 
         -- Insert release for season
         INSERT INTO "release" (release_date, "type", media_id)
         VALUES (current_season.start_date, 'original', new_season_id);
-
-        insert_count := insert_count + 1;
     END LOOP;
-
-    -- Output the number of inserts
-    RAISE NOTICE 'INSERT 0 %', insert_count;
 END $$;
 
 -- Episodes
