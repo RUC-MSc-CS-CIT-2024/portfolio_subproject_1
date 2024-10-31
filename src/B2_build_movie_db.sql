@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS media_primary_information CASCADE;
 DROP TABLE IF EXISTS title_title_type CASCADE;
 DROP TABLE IF EXISTS title_title_attribute CASCADE;
 DROP TABLE IF EXISTS media_genre CASCADE;
@@ -205,6 +206,14 @@ CREATE TABLE media_production_company (
     production_company_id   INTEGER     NOT NULL REFERENCES production_company(production_company_id),
     "type"                  VARCHAR(20) NOT NULL,
     PRIMARY KEY (media_id, production_company_id)
+);
+
+CREATE TABLE media_primary_information (
+    media_id                    INTEGER PRIMARY KEY,
+    title_id                    INTEGER NOT NULL REFERENCES title(title_id),
+    release_id                  INTEGER NULL REFERENCES release(release_id),
+    promotional_media_id INTEGER NULL REFERENCES promotional_media(promotional_media_id),
+    FOREIGN KEY (media_id) REFERENCES media(media_id)
 );
 
 ---
@@ -819,12 +828,13 @@ WHERE o.media_id NOT IN (SELECT u.media_id FROM updated AS u);
 -- Create posters
 INSERT INTO promotional_media(release_id, "type", uri)
 SELECT r.release_id, 'poster', o.poster
-FROM release r 
+FROM release r
 JOIN media m ON r.media_id = m.media_id
 JOIN original.omdb_data o ON m.imdb_id = o.tconst
-WHERE o.poster != 'N/A'
+WHERE (o.poster != 'N/A'
     AND o.poster != ''
-    AND o.poster IS NOT NULL;
+    AND o.poster IS NOT NULL)
+    AND r."type" = 'original';
 
 -- Create websites
 INSERT INTO promotional_media(release_id, "type", uri)
@@ -835,6 +845,33 @@ JOIN original.omdb_data o ON m.imdb_id = o.tconst
 WHERE o.website != 'N/A'
     AND o.website != ''
     AND o.website IS NOT NULL;
+
+-- Create primary info
+WITH
+    primary_title AS (
+        SELECT DISTINCT ON (media_id) media_id, title_id 
+        FROM title AS t
+        JOIN media AS m USING (media_id)
+        JOIN original.title_basics AS tb ON m.imdb_id = tb.tconst
+        WHERE tb.primarytitle = t."name"
+    ),
+    primary_release AS (
+        SELECT DISTINCT ON (media_id) media_id, release_id 
+        FROM release AS r
+        WHERE r."type" = 'original'
+    ),
+    primary_poster AS (
+        SELECT DISTINCT ON (pr.media_id) pr.media_id, pm.promotional_media_id
+        FROM promotional_media AS pm
+        JOIN primary_release AS pr USING (release_id)
+        WHERE pm."type" = 'poster'
+    )
+INSERT INTO media_primary_information(media_id, title_id, release_id, promotional_media_id)
+SELECT pt.media_id, pt.title_id, pr.release_id, pp.promotional_media_id
+FROM primary_title AS pt
+JOIN primary_release AS pr USING(media_id)
+JOIN primary_poster AS pp USING(media_id);
+
 
 -- Insert Production companies
 INSERT INTO production_company ("name", "description")
