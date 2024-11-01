@@ -163,7 +163,7 @@ CREATE TABLE spoken_language (
 
 CREATE TABLE promotional_media (
     promotional_media_id    INTEGER         PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    release_id              INTEGER         NOT NULL REFERENCES release(release_id),
+    release_id              INTEGER         NOT NULL REFERENCES release(release_id) ON DELETE CASCADE,
     "type"                  VARCHAR(50)     NOT NULL,
     "uri"                   VARCHAR(255)    NOT NULL
 );
