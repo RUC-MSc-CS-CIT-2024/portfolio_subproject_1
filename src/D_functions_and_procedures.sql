@@ -1,6 +1,3 @@
--- This script contains all the functions and procedures that are part of the project.
--- Enable the pgcrypto extension
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Indexing
 
 DO $$
