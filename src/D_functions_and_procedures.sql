@@ -346,6 +346,46 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION rate(p_userid INT, p_media_id INTEGER, p_score NUMERIC, p_review_text TEXT)
+RETURNS VOID AS $$
+BEGIN
+
+    -- Insert new score into user_score
+    INSERT INTO user_score (user_id, media_id, score_value, review_text)
+    VALUES (p_userid, p_media_id, p_score, p_review_text);
+
+    -- Update the score table with the new average rating
+    -- Check if the movie already has a score entry
+    SELECT * FROM score WHERE media_id = p_media_id
+    IF FOUND THEN
+        -- Update the existing average score and vote count in the score table
+        UPDATE score
+        SET value = (SELECT AVG(score_value) FROM user_score WHERE media_id = p_media_id),
+            vote_count = (SELECT COUNT(*) FROM user_score WHERE media_id = p_media_id),
+            "at" = CURRENT_TIMESTAMP
+        WHERE media_id = p_media_id
+        AND source = 'userrating';
+    ELSE
+        -- Insert a new average score into the score table if none exists
+        INSERT INTO score (source, value, vote_count, media_id)
+        VALUES (
+            'userrating',
+            (SELECT AVG(score_value) FROM user_score WHERE media_id = p_media_id),
+            (SELECT COUNT(*) FROM user_score WHERE media_id = p_media_id),
+            p_media_id,
+			p_review_text
+        );
+    END IF;
+
+    -- Display the updated average rating
+    RAISE NOTICE 'Average Rating: %', (
+        SELECT AVG(CAST(score_value AS NUMERIC)) 
+        FROM user_score 
+        WHERE media_id = p_media_id
+    );
+END;
+$$ LANGUAGE plpgsql;
+
 -- ============================================================
 -- D4 Test structured_string_search function
 -- ============================================================
