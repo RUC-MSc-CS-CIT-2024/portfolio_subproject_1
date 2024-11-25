@@ -6,10 +6,11 @@ DROP TABLE IF EXISTS user_score CASCADE;
 DROP TABLE IF EXISTS "user" CASCADE;
 
 CREATE TABLE "user" (
-    user_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL
+    user_id         INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    username        VARCHAR UNIQUE NOT NULL,
+    email           VARCHAR UNIQUE NOT NULL,
+    hashed_password VARCHAR NOT NULL,
+    salt            VARCHAR NOT NULL
 );
 
 CREATE TABLE search_history (
