@@ -1,6 +1,3 @@
--- This script contains all the functions and procedures that are part of the project.
--- Enable the pgcrypto extension
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Indexing
 
 DO $$
@@ -126,178 +123,6 @@ BEGIN
         CREATE INDEX idx_media_in_collection_collection_media ON media_in_collection(collection_id, media_id);
     END IF;
 END $$;
-
--- ============================================================
--- D1 Basic Framework Functionality
--- Test create_user function
--- ============================================================
-
-CREATE OR REPLACE FUNCTION create_user(p_username VARCHAR, p_password VARCHAR, p_email VARCHAR)
-RETURNS VOID AS $$
-DECLARE
-    -- Validation variables
-    v_min_length INT := 8;
-    v_has_upper BOOLEAN := FALSE;
-    v_has_lower BOOLEAN := FALSE;
-    v_has_digit BOOLEAN := FALSE;
-    v_has_special BOOLEAN := FALSE;
-BEGIN
-    -- Check if the username already exists
-    IF EXISTS (SELECT 1 FROM "user" WHERE username = p_username) THEN
-        RAISE EXCEPTION 'Username % already exists', p_username;
-
-    -- Check if the email already exists
-    ELSIF EXISTS (SELECT 1 FROM "user" WHERE email = p_email) THEN
-        RAISE EXCEPTION 'Email % already exists', p_email;
-
-    ELSE
-        IF LENGTH(p_password) < v_min_length THEN
-            RAISE EXCEPTION 'Password must be at least % characters long', v_min_length;
-        END IF;
-
-        -- Validate password complexity
-        v_has_upper := p_password ~ '[A-Z]';
-        v_has_lower := p_password ~ '[a-z]';
-        v_has_digit := p_password ~ '[0-9]';
-        v_has_special := p_password ~ '[^a-zA-Z0-9]';
-
-        IF NOT v_has_upper THEN
-            RAISE EXCEPTION 'Password must contain at least one uppercase letter';
-        ELSIF NOT v_has_lower THEN
-            RAISE EXCEPTION 'Password must contain at least one lowercase letter';
-        ELSIF NOT v_has_digit THEN
-            RAISE EXCEPTION 'Password must contain at least one digit';
-        ELSIF NOT v_has_special THEN
-            RAISE EXCEPTION 'Password must contain at least one special character';
-        END IF;
-
-        -- Insert the new user with a hashed password using crypt
-        INSERT INTO "user" (username, password, email)
-        VALUES (p_username, crypt(p_password, gen_salt('bf')), p_email);
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
--- ============================================================
--- D1 Test login_user function
--- ============================================================
-
-CREATE OR REPLACE FUNCTION login_user(p_username_or_email VARCHAR, p_password VARCHAR)
-RETURNS BOOLEAN AS $$
-DECLARE
-    v_stored_password VARCHAR;
-    v_user_id INT;
-BEGIN
-    SELECT password, user_id
-    INTO v_stored_password, v_user_id
-    FROM "user"
-    WHERE username = p_username_or_email OR email = p_username_or_email;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Invalid username/email or password';
-    END IF;
-
-    -- Validate the provided password with the stored hashed password
-    IF crypt(p_password, v_stored_password) = v_stored_password THEN
-        -- Password matches, login successful
-        RETURN TRUE;
-    ELSE
-        -- Password does not match
-        RAISE EXCEPTION 'Invalid username/email or password';
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
--- ============================================================
--- D1 Test update_user_password function
--- ============================================================
-
-CREATE OR REPLACE FUNCTION update_user_password(p_user_id INT, p_new_password VARCHAR)
-RETURNS VOID AS $$
-DECLARE
-    v_min_length INT := 8;
-    v_has_upper BOOLEAN := FALSE;
-    v_has_lower BOOLEAN := FALSE;
-    v_has_digit BOOLEAN := FALSE;
-    v_has_special BOOLEAN := FALSE;
-BEGIN
-    IF LENGTH(p_new_password) < v_min_length THEN
-        RAISE EXCEPTION 'Password must be at least % characters long', v_min_length;
-    END IF;
-
-    v_has_upper := p_new_password ~ '[A-Z]';
-    v_has_lower := p_new_password ~ '[a-z]';
-    v_has_digit := p_new_password ~ '[0-9]';
-    v_has_special := p_new_password ~ '[^a-zA-Z0-9]';
-
-    IF NOT v_has_upper THEN
-        RAISE EXCEPTION 'Password must contain at least one uppercase letter';
-    ELSIF NOT v_has_lower THEN
-        RAISE EXCEPTION 'Password must contain at least one lowercase letter';
-    ELSIF NOT v_has_digit THEN
-        RAISE EXCEPTION 'Password must contain at least one digit';
-    ELSIF NOT v_has_special THEN
-        RAISE EXCEPTION 'Password must contain at least one special character';
-    END IF;
-
-    -- Update the password securely with crypt
-    UPDATE "user"
-    SET password = crypt(p_new_password, gen_salt('bf'))
-    WHERE user_id = p_user_id;
-    
-    -- Check if update was successful
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'User ID % not found', p_user_id;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
--- ============================================================
--- D1 update_user_credentials function
--- ============================================================
-
-CREATE OR REPLACE FUNCTION update_user_credentials(p_user_id INT, p_new_username VARCHAR DEFAULT NULL, p_new_email VARCHAR DEFAULT NULL)
-RETURNS VOID AS $$
-BEGIN
-    IF p_new_username IS NOT NULL THEN
-        IF EXISTS (SELECT 1 FROM "user" WHERE username = p_new_username AND user_id != p_user_id) THEN
-            RAISE EXCEPTION 'Username % already exists', p_new_username;
-        ELSE
-            UPDATE "user" SET username = p_new_username WHERE user_id = p_user_id;
-        END IF;
-    END IF;
-
-    IF p_new_email IS NOT NULL THEN
-        IF EXISTS (SELECT 1 FROM "user" WHERE email = p_new_email AND user_id != p_user_id) THEN
-            RAISE EXCEPTION 'Email % already exists', p_new_email;
-        ELSE
-            UPDATE "user" SET email = p_new_email WHERE user_id = p_user_id;
-        END IF;
-    END IF;
-
-    -- Check if any update was applied
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'User ID % not found or no changes applied', p_user_id;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
--- ============================================================
--- D1 delete_user function
--- ============================================================
-
-CREATE OR REPLACE FUNCTION delete_user(p_user_id INT)
-RETURNS VOID AS $$
-BEGIN
-    -- Check if the user exists before deletion
-    IF EXISTS (SELECT 1 FROM "user" WHERE user_id = p_user_id) THEN
-        -- Delete the user (related records will be deleted automatically via ON DELETE CASCADE)
-        DELETE FROM "user" WHERE user_id = p_user_id;
-    ELSE
-        RAISE EXCEPTION 'User ID % not found', p_user_id;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
 
 -- ============================================================
 -- D1 Test follow_person function
@@ -514,6 +339,46 @@ BEGIN
         SELECT AVG(CAST(score_value AS NUMERIC)) 
         FROM user_score 
         WHERE media_id = v_media_id
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION rate(p_userid INT, p_media_id INTEGER, p_score NUMERIC, p_review_text TEXT)
+RETURNS VOID AS $$
+BEGIN
+
+    -- Insert new score into user_score
+    INSERT INTO user_score (user_id, media_id, score_value, review_text)
+    VALUES (p_userid, p_media_id, p_score, p_review_text);
+
+    -- Update the score table with the new average rating
+    -- Check if the movie already has a score entry
+    SELECT * FROM score WHERE media_id = p_media_id
+    IF FOUND THEN
+        -- Update the existing average score and vote count in the score table
+        UPDATE score
+        SET value = (SELECT AVG(score_value) FROM user_score WHERE media_id = p_media_id),
+            vote_count = (SELECT COUNT(*) FROM user_score WHERE media_id = p_media_id),
+            "at" = CURRENT_TIMESTAMP
+        WHERE media_id = p_media_id
+        AND source = 'userrating';
+    ELSE
+        -- Insert a new average score into the score table if none exists
+        INSERT INTO score (source, value, vote_count, media_id)
+        VALUES (
+            'userrating',
+            (SELECT AVG(score_value) FROM user_score WHERE media_id = p_media_id),
+            (SELECT COUNT(*) FROM user_score WHERE media_id = p_media_id),
+            p_media_id,
+			p_review_text
+        );
+    END IF;
+
+    -- Display the updated average rating
+    RAISE NOTICE 'Average Rating: %', (
+        SELECT AVG(CAST(score_value AS NUMERIC)) 
+        FROM user_score 
+        WHERE media_id = p_media_id
     );
 END;
 $$ LANGUAGE plpgsql;
