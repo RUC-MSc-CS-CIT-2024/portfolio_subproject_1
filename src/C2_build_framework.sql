@@ -52,13 +52,13 @@ CREATE TABLE "following" (
     followed_since TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert sample data using DO blocks
+Insert sample data using DO blocks
 DO $$
 DECLARE
     new_user_id INTEGER;
 BEGIN
-    INSERT INTO "user" (username, password, email) 
-    VALUES ('john_doe', 'password123', 'john@example.com')
+    INSERT INTO "user" (username, email, hashed_password, salt) 
+    VALUES ('john_doe', 'john@example.com', 'n0DrMEfTe2NHXTTUK8MMKD456uQX57e9kYFIwzCxQa4=', 'ckFdRksv8KXN59d6cFPxsA==')
     RETURNING user_id INTO new_user_id;
 
     INSERT INTO search_history (user_id, type, query) VALUES
@@ -82,8 +82,8 @@ DO $$
 DECLARE
     new_user_id INTEGER;
 BEGIN
-    INSERT INTO "user" (username, password, email) 
-    VALUES ('jane_smith', 'password456', 'jane@example.com')
+    INSERT INTO "user" (username, email, hashed_password, salt) 
+    VALUES ('jane_smith', 'jane@example.com', 'vw4MlPULH8WsN+TmBQFn2U7dA9mP5YCPo5QtNQe+so4=', 'JyLxBzzUiRrqJY9ELT0qHg==')
     RETURNING user_id INTO new_user_id;
 
     INSERT INTO search_history (user_id, type, query) VALUES
@@ -105,8 +105,8 @@ DO $$
 DECLARE
     new_user_id INTEGER;
 BEGIN
-    INSERT INTO "user" (username, password, email) 
-    VALUES ('mike_jones', 'password789', 'mike@example.com')
+    INSERT INTO "user" (username, email, hashed_password, salt) 
+    VALUES ('mike_jones', 'mike@example.com', 'RqCDVuWuWwmF37UZ++XLbwXtyACWvismWWRNsrlbDMs=', 'mJTGtN2Fs2BbOEyL4qWsVQ==')
     RETURNING user_id INTO new_user_id;
 
     INSERT INTO search_history (user_id, type, query) VALUES
