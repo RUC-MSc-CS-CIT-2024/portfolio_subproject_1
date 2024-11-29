@@ -353,7 +353,7 @@ BEGIN
 
     -- Update the score table with the new average rating
     -- Check if the movie already has a score entry
-    SELECT * FROM score WHERE media_id = p_media_id
+    SELECT * FROM score WHERE media_id = p_media_id;
     IF FOUND THEN
         -- Update the existing average score and vote count in the score table
         UPDATE score
