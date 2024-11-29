@@ -52,7 +52,7 @@ CREATE TABLE "following" (
     followed_since TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-Insert sample data using DO blocks
+-- Insert sample data using DO blocks
 DO $$
 DECLARE
     new_user_id INTEGER;
