@@ -9,7 +9,7 @@ mkdir output
 mv -t ./output imdb.backup wi.backup omdb_data.backup
 EOF
 
-FROM postgres:17.2
+FROM postgres:17.2 AS final
 COPY --from=build /build/output /data
 COPY ./src /scripts
 
