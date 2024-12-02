@@ -271,7 +271,6 @@ BEGIN
             FROM media AS me
             JOIN title AS ti USING (media_id)
             WHERE ti."name" LIKE '%' || query || '%' 
-            OR me.plot LIKE '%' || query || '%'
         )
     SELECT DISTINCT t.media_id, t."name"
     FROM search_result AS sr
