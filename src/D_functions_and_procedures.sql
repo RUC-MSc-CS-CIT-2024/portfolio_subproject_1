@@ -258,8 +258,10 @@ RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
     -- SEARCH HISTORY
-    INSERT INTO search_history (user_id, type, query)
-    VALUES (user_id, 'simple_search', query);
+    IF user_id != -1 THEN
+        INSERT INTO search_history (user_id, type, query)
+        VALUES (user_id, 'simple_search', query);
+    END IF;
 
     -- RESULT
     RETURN QUERY
