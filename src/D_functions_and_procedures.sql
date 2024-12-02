@@ -266,14 +266,20 @@ BEGIN
     -- RESULT
     RETURN QUERY
     WITH 
-        search_result AS (
-            SELECT me.media_id, me.imdb_id
-            FROM media AS me
-            JOIN title AS ti USING (media_id)
-            WHERE ti."name" LIKE '%' || query || '%' 
+        query_words AS (
+                SELECT LOWER(word) AS word
+                FROM regexp_split_to_table(query, '\s+') AS word
+        ),
+        matched_titles AS (
+                SELECT me.media_id
+                FROM media AS me
+                JOIN title AS ti USING (media_id)
+                JOIN query_words qw ON LOWER(ti."name") LIKE '%' || qw.word || '%'
+                GROUP BY me.media_id
+                HAVING COUNT(DISTINCT qw.word) = (SELECT COUNT(*) FROM query_words)
         )
-    SELECT DISTINCT t.media_id, t."name"
-    FROM search_result AS sr
+    SELECT DISTINCT mt.media_id, t."name"
+    FROM matched_titles mt
     JOIN title AS t USING (media_id)
     JOIN title_title_type USING (title_id)
     JOIN title_type AS tt USING (title_type_id)
