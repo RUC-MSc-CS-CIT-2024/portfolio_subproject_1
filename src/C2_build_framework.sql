@@ -70,11 +70,13 @@ BEGIN
     (new_user_id, 104, 'Need to check reviews first');
 
     INSERT INTO completed (user_id, media_id, completed_date, rewatchability, note) VALUES
-    (new_user_id, 201, '2024-01-15', 5, 'Amazing movie, must rewatch!'),
+    (new_user_id, 201, '2024-01-15', 5, ''),
     (new_user_id, 204, '2024-04-20', 5, 'One of my favorites!');
 
     INSERT INTO user_score (user_id, media_id, score_value, review_text) VALUES
     (new_user_id, 301, 9, 'Brilliant storytelling and visuals'),
+    (new_user_id, 201, 9, 'Amazing movie, must rewatch!'),
+    (new_user_id, 204, 8, ''),
     (new_user_id, 304, 10, 'One of the best movies I have ever seen!');
 END $$;
 
@@ -98,6 +100,7 @@ BEGIN
 
     INSERT INTO user_score (user_id, media_id, score_value, review_text) VALUES
     (new_user_id, 302, 8, 'Excellent performances but slow pacing'),
+    (new_user_id, 202, 8, 'Great acting and storyline'),
     (new_user_id, 305, 6, 'Decent, but not my cup of tea');
 END $$;
 
@@ -119,5 +122,6 @@ BEGIN
     (new_user_id, 203, '2024-03-12', 3, 'Good, but not memorable');
 
     INSERT INTO user_score (user_id, media_id, score_value, review_text) VALUES
-    (new_user_id, 303, 7, 'Good, but could be better');
+    (new_user_id, 303, 7, 'Good, but could be better'),
+    (new_user_id, 203, 5, 'Good, but not memorable');
 END $$;
