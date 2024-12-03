@@ -137,7 +137,7 @@ CREATE TABLE title (
 
 CREATE TABLE release (
     release_id      INTEGER     PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    release_date    DATE        NOT NULL,
+    release_date    DATE        NULL,
     rated           VARCHAR(80) NULL,
     "type"          VARCHAR(50) NOT NULL,
     country_id      INTEGER     NULL REFERENCES country(country_id),
@@ -663,8 +663,8 @@ SELECT
     TO_DATE(startyear, 'YYYY'),
     'original',
     media_id
-FROM titleaka_with_id;
-
+FROM titleaka_with_id
+WHERE startyear != '';
 -- Seasons
 
 DO $$
@@ -678,7 +678,10 @@ BEGIN
         SELECT 
             e.parenttconst,
             e.seasonnumber AS season_number,
-            TO_DATE(MIN(t.startyear)::TEXT, 'YYYY') AS "start_date",  
+            CASE 
+                WHEN MIN(startyear) IS '' THEN NULL 
+                ELSE TO_DATE(MIN(startyear)::TEXT, 'YYYY') 
+            END,  
             s.primarytitle AS show_title,
             m.media_id
         FROM original.title_basics AS t
