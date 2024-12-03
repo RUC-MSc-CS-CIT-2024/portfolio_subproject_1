@@ -869,8 +869,8 @@ WITH
 INSERT INTO media_primary_information(media_id, title_id, release_id, promotional_media_id)
 SELECT pt.media_id, pt.title_id, pr.release_id, pp.promotional_media_id
 FROM primary_title AS pt
-JOIN primary_release AS pr USING(media_id)
-JOIN primary_poster AS pp USING(media_id);
+LEFT JOIN primary_release AS pr USING(media_id)
+LEFT JOIN primary_poster AS pp USING(media_id);
 
 
 -- Insert Production companies
