@@ -65,6 +65,10 @@ BEGIN
     (new_user_id, 'movie', 'Inception'),
     (new_user_id, 'movie', 'Interstellar');
 
+    INSERT INTO "following" (user_id, person_id) VALUES
+    (new_user_id, 126),
+    (new_user_id, 76810);
+
     INSERT INTO bookmark (user_id, media_id, note) VALUES
     (new_user_id, 101, 'Watch later'),
     (new_user_id, 104, 'Need to check reviews first');
