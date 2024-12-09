@@ -31,14 +31,14 @@ CREATE INDEX IF NOT EXISTS idx_person_name ON person("name");
 CREATE INDEX IF NOT EXISTS idx_person_name ON person(imdb_id);
 CREATE INDEX IF NOT EXISTS idx_cast_member_character ON cast_member("character");
 
-    -- Commonly Queried Columns
+-- Commonly Queried Columns
 CREATE INDEX IF NOT EXISTS idx_completed_completed_date ON completed(completed_date);
 CREATE INDEX IF NOT EXISTS idx_user_score_score_value ON user_score(score_value);
 CREATE INDEX IF NOT EXISTS idx_search_history_type ON search_history(type);
 CREATE INDEX IF NOT EXISTS idx_media_in_collection_collection_id ON media_in_collection(collection_id);
 CREATE INDEX IF NOT EXISTS idx_wi_words ON wi(word);
 
-    -- Composite Indexes
+-- Composite Indexes
 CREATE INDEX IF NOT EXISTS idx_media_production_country_media_country ON media_production_country(media_id, country_id);
 CREATE INDEX IF NOT EXISTS idx_media_country ON media_production_country(country_id, media_id);
 CREATE INDEX IF NOT EXISTS idx_media_in_collection_collection_media ON media_in_collection(collection_id, media_id);
@@ -177,7 +177,8 @@ RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
     -- SEARCH HISTORY
-    IF user_id != -1 THEN
+    PERFORM * FROM "user" WHERE user_id = user_id;
+    IF FOUND THEN
         INSERT INTO search_history (user_id, type, query)
         VALUES (user_id, 'simple_search', query);
     END IF;
@@ -194,10 +195,8 @@ BEGIN
         )
     SELECT DISTINCT t.media_id, t."name"
     FROM search_result AS sr
-    JOIN title AS t USING (media_id)
-    JOIN title_title_type USING (title_id)
-    JOIN title_type AS tt USING (title_type_id)
-    WHERE tt."name" = 'original';
+    JOIN media_primary_information USING(media_id)
+    JOIN title AS t USING(title_id);
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -319,9 +318,12 @@ RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
     -- SEARCH HISTORY
-    INSERT INTO search_history (user_id, "type", query)
-    VALUES (p_user_id, 'structured_string_search', 
-        FORMAT('title: "%s", plot: "%s", character: "%s", person: "%s"', p_title, p_plot, p_character, p_person));
+    PERFORM * FROM "user" WHERE user_id = p_user_id;
+    IF FOUND THEN
+        INSERT INTO search_history (user_id, "type", query)
+        VALUES (p_user_id, 'structured_string_search', 
+            FORMAT('title: "%s", plot: "%s", character: "%s", person: "%s"', p_title, p_plot, p_character, p_person));
+    END IF;
 
     -- RESULT
     RETURN QUERY
@@ -333,17 +335,31 @@ BEGIN
             LEFT JOIN crew_member cr ON m.media_id = cr.media_id
             LEFT JOIN cast_member ca ON m.media_id = ca.media_id
             LEFT JOIN person p ON ca.person_id = p.person_id OR cr.person_id = p.person_id
-            WHERE (p_title IS NULL OR t."name" ILIKE '%' || p_title || '%')
-                AND (p_plot IS NULL OR m.plot ILIKE '%' || p_plot || '%')
-                AND (p_character IS NULL OR ca."character" ILIKE '%' || p_character || '%')
-                AND (p_user_id IS NULL OR p."name" ILIKE '%' || p_person || '%')
+            WHERE 
+                CASE 
+                    WHEN p_title IS NOT NULL THEN t."name" ILIKE '%' || p_title || '%'
+                    ELSE true
+                END
+                AND
+                CASE 
+                    WHEN p_plot IS NOT NULL THEN m.plot ILIKE '%' || p_plot || '%'
+                    ELSE true
+                END
+                AND
+                CASE 
+                    WHEN p_character IS NOT NULL THEN ca."character" ILIKE '%' || p_character || '%'
+                    ELSE true
+                END
+                AND
+                CASE 
+                    WHEN p_person IS NOT NULL THEN p."name" ILIKE '%' || p_person || '%'
+                    ELSE true
+                END
         )
     SELECT DISTINCT t.media_id, t."name"
     FROM search_result AS sr
-    JOIN title AS t USING (media_id)
-    JOIN title_title_type USING (title_id)
-    JOIN title_type AS tt USING (title_type_id)
-    WHERE tt."name" = 'original';
+    JOIN media_primary_information USING(media_id)
+    JOIN title AS t USING(title_id);
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -353,28 +369,22 @@ LANGUAGE 'plpgsql';
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION structured_string_search_name(
-    query VARCHAR(150),
-    user_id INTEGER
+    p_name VARCHAR(150),
+    p_user_id INTEGER
 )
-RETURNS TABLE (person_id INTEGER, "name" VARCHAR(150), filmography json)
+RETURNS TABLE (person_id INTEGER, "name" VARCHAR(150))
 AS $$
 BEGIN
-
-    INSERT INTO search_history (user_id, type, query)
-    VALUES (user_id, 'structured_string_search_name', query);
+    PERFORM * FROM "user" WHERE user_id = p_user_id;
+    IF FOUND THEN
+        INSERT INTO search_history (user_id, "type", query)
+        VALUES (p_user_id, 'structured_string_search_name', p_name);
+    END IF;
 
     RETURN QUERY
-    SELECT p.person_id, 
-		p.name, 
-		json_agg(json_build_object('media_id', "cast".media_id, 'character', REPLACE(REPLACE("cast".character,'[',''),']',''),'crew_role',jc.name))
-    FROM person p
-    LEFT JOIN cast_member "cast" USING (person_id)
-    LEFT JOIN crew_member crew USING (person_id, media_id)
-	LEFT JOIN job_category jc ON crew.job_category_id = jc.job_category_id
-    WHERE p.name ILIKE '%'||query||'%'
-	GROUP BY p.person_id,p.name
-	ORDER BY p.person_id;
-
+    SELECT p.person_id, p."name" 
+    FROM person AS p
+    WHERE p."name" ILIKE '%'|| p_name ||'%';
 END;
 $$
 language plpgsql;
@@ -763,27 +773,36 @@ $$ LANGUAGE plpgsql;
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION exact_match_titles(
-    keywords TEXT[]
+    p_keywords TEXT[],
+    p_user_id INTEGER
 )
 RETURNS TABLE (media_id INTEGER, title TEXT) AS $$
 BEGIN
-    RETURN QUERY
+    -- SEARCH HISTORY
+    PERFORM * FROM "user" WHERE user_id = p_user_id;
+    IF FOUND THEN
+        INSERT INTO search_history (user_id, "type", query)
+        VALUES (p_user_id, 'exact_match_titles', array_to_string(p_keywords, ' '));
+    END IF;
+
     -- Find matching media IDs based on keywords in the wi table
+    RETURN QUERY
     WITH
         imdb_ids_with_word AS (
             SELECT tconst AS imdb_id
             FROM wi
-            WHERE word = ANY(keywords)
+            WHERE word = ANY(p_keywords)
             GROUP BY tconst
-            HAVING COUNT(DISTINCT word) = array_length(keywords, 1)
+            HAVING COUNT(DISTINCT word) = array_length(p_keywords, 1)
         )
     SELECT m.media_id, t."name" AS title
     FROM media m
     JOIN imdb_ids_with_word USING(imdb_id)
-    JOIN title AS t USING(media_id)
-    JOIN title_title_type USING(title_id)
-    JOIN title_type AS tt using(title_type_id)
-    WHERE tt."name" = 'original';
+    JOIN media_primary_information AS mpi ON mpi.media_id = m.media_id
+    JOIN title AS t ON t.title_id = mpi.title_id
+    JOIN score AS s ON m.media_id = s.media_id
+    GROUP BY m.media_id, t."name"
+    ORDER BY MAX(s.vote_count) DESC;
 END;
 $$ LANGUAGE plpgsql;
 
