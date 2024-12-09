@@ -811,10 +811,18 @@ $$ LANGUAGE plpgsql;
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION best_match_titles(
-    keywords TEXT[]
+    p_keywords TEXT[],
+    p_user_id INTEGER
 )
 RETURNS TABLE (media_id INTEGER, title TEXT, match_count INTEGER) AS $$
 BEGIN
+    -- SEARCH HISTORY
+    PERFORM * FROM "user" WHERE user_id = p_user_id;
+    IF FOUND THEN
+        INSERT INTO search_history (user_id, "type", query)
+        VALUES (p_user_id, 'best_match_titles', array_to_string(p_keywords, ' '));
+    END IF;
+
     RETURN QUERY
     WITH
         original_titles AS (
@@ -829,7 +837,7 @@ BEGIN
     FROM media AS m
     JOIN wi ON m.imdb_id = wi.tconst
     JOIN original_titles AS t USING(media_id)
-    WHERE wi.word = ANY(keywords)
+    WHERE wi.word = ANY(p_keywords)
     GROUP BY m.media_id, t.title
     ORDER BY match_count DESC;
 END;
