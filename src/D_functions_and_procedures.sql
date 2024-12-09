@@ -1,128 +1,47 @@
 -- Indexing
 
-DO $$
-BEGIN
-    -- User-Related Foreign Keys
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_search_history_user_id') THEN
-        CREATE INDEX idx_search_history_user_id ON search_history(user_id);
-    END IF;
+-- User-Related Indexes
+CREATE INDEX IF NOT EXISTS idx_search_history_user_id ON search_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookmark_user_id ON bookmark(user_id);
+CREATE INDEX IF NOT EXISTS idx_completed_user_id ON completed(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_score_user_id ON user_score(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_username ON "user"(username);
+CREATE INDEX IF NOT EXISTS idx_user_email ON "user"(email);
 
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_bookmark_user_id') THEN
-        CREATE INDEX idx_bookmark_user_id ON bookmark(user_id);
-    END IF;
+-- Media-Related Indexes
+CREATE INDEX IF NOT EXISTS idx_bookmark_media_id ON bookmark(media_id);
+CREATE INDEX IF NOT EXISTS idx_completed_media_id ON completed(media_id);
+CREATE INDEX IF NOT EXISTS idx_user_score_media_id ON user_score(media_id);
+CREATE INDEX IF NOT EXISTS idx_season_series_id ON season(series_id);
+CREATE INDEX IF NOT EXISTS idx_episode_season_id ON episode(season_id);
+CREATE INDEX IF NOT EXISTS idx_media_genre_media_id ON media_genre(media_id);
+CREATE INDEX IF NOT EXISTS idx_media_production_country_media_id ON media_production_country(media_id);
+CREATE INDEX IF NOT EXISTS idx_score_media_id ON score(media_id);
+CREATE INDEX IF NOT EXISTS idx_media_in_collection_media_id ON media_in_collection(media_id);
+CREATE INDEX IF NOT EXISTS idx_related_media_primary_id ON related_media(primary_id);
+CREATE INDEX IF NOT EXISTS idx_related_media_related_id ON related_media(related_id);
+CREATE INDEX IF NOT EXISTS idx_media_imdb_id ON media(imdb_id);
+CREATE INDEX IF NOT EXISTS idx_title_name ON title("name");
+CREATE INDEX IF NOT EXISTS idx_title_type_name ON title_type("name");
 
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_completed_user_id') THEN
-        CREATE INDEX idx_completed_user_id ON completed(user_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_score_user_id') THEN
-        CREATE INDEX idx_user_score_user_id ON user_score(user_id);
-    END IF;
-
-    -- Media-Related Foreign Keys
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_bookmark_media_id') THEN
-        CREATE INDEX idx_bookmark_media_id ON bookmark(media_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_completed_media_id') THEN
-        CREATE INDEX idx_completed_media_id ON completed(media_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_score_media_id') THEN
-        CREATE INDEX idx_user_score_media_id ON user_score(media_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_season_series_id') THEN
-        CREATE INDEX idx_season_series_id ON season(series_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_episode_season_id') THEN
-        CREATE INDEX idx_episode_season_id ON episode(season_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_genre_media_id') THEN
-        CREATE INDEX idx_media_genre_media_id ON media_genre(media_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_production_country_media_id') THEN
-        CREATE INDEX idx_media_production_country_media_id ON media_production_country(media_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_score_media_id') THEN
-        CREATE INDEX idx_score_media_id ON score(media_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_in_collection_media_id') THEN
-        CREATE INDEX idx_media_in_collection_media_id ON media_in_collection(media_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_related_media_primary_id') THEN
-        CREATE INDEX idx_related_media_primary_id ON related_media(primary_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_related_media_related_id') THEN
-        CREATE INDEX idx_related_media_related_id ON related_media(related_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_imdb_id') THEN
-        CREATE INDEX idx_media_imdb_id ON media(imdb_id);
-    END IF;
-
-    -- Person-Related Foreign Keys
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_crew_member_person_id') THEN
-        CREATE INDEX idx_crew_member_person_id ON crew_member(person_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_cast_member_person_id') THEN
-        CREATE INDEX idx_cast_member_person_id ON cast_member(person_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_person_name') THEN
-        CREATE INDEX idx_person_name ON person(name);
-    END IF;
+-- Person-Related Indexes
+CREATE INDEX IF NOT EXISTS idx_crew_member_person_id ON crew_member(person_id);
+CREATE INDEX IF NOT EXISTS idx_cast_member_person_id ON cast_member(person_id);
+CREATE INDEX IF NOT EXISTS idx_person_name ON person("name");
+CREATE INDEX IF NOT EXISTS idx_person_name ON person(imdb_id);
+CREATE INDEX IF NOT EXISTS idx_cast_member_character ON cast_member("character");
 
     -- Commonly Queried Columns
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_username') THEN
-        CREATE INDEX idx_user_username ON "user"(username);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_email') THEN
-        CREATE INDEX idx_user_email ON "user"(email);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_completed_completed_date') THEN
-        CREATE INDEX idx_completed_completed_date ON completed(completed_date);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_user_score_score_value') THEN
-        CREATE INDEX idx_user_score_score_value ON user_score(score_value);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_search_history_type') THEN
-        CREATE INDEX idx_search_history_type ON search_history(type);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_in_collection_collection_id') THEN
-        CREATE INDEX idx_media_in_collection_collection_id ON media_in_collection(collection_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_wi_words') THEN
-        CREATE INDEX idx_wi_words ON wi(word);
-    END IF;
+CREATE INDEX IF NOT EXISTS idx_completed_completed_date ON completed(completed_date);
+CREATE INDEX IF NOT EXISTS idx_user_score_score_value ON user_score(score_value);
+CREATE INDEX IF NOT EXISTS idx_search_history_type ON search_history(type);
+CREATE INDEX IF NOT EXISTS idx_media_in_collection_collection_id ON media_in_collection(collection_id);
+CREATE INDEX IF NOT EXISTS idx_wi_words ON wi(word);
 
     -- Composite Indexes
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_production_country_media_country') THEN
-        CREATE INDEX idx_media_production_country_media_country ON media_production_country(media_id, country_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_country') THEN
-        CREATE INDEX idx_media_country ON media_production_country(country_id, media_id);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_media_in_collection_collection_media') THEN
-        CREATE INDEX idx_media_in_collection_collection_media ON media_in_collection(collection_id, media_id);
-    END IF;
-END $$;
+CREATE INDEX IF NOT EXISTS idx_media_production_country_media_country ON media_production_country(media_id, country_id);
+CREATE INDEX IF NOT EXISTS idx_media_country ON media_production_country(country_id, media_id);
+CREATE INDEX IF NOT EXISTS idx_media_in_collection_collection_media ON media_in_collection(collection_id, media_id);
 
 -- ============================================================
 -- D1 Test follow_person function
