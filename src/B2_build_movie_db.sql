@@ -679,9 +679,9 @@ BEGIN
             e.parenttconst,
             e.seasonnumber AS season_number,
             CASE 
-                WHEN MIN(startyear) IS '' THEN NULL 
-                ELSE TO_DATE(MIN(startyear)::TEXT, 'YYYY') 
-            END,  
+                WHEN MIN(t.startyear) = '' THEN NULL 
+                ELSE TO_DATE(MIN(t.startyear)::TEXT, 'YYYY') 
+            END AS "start_date",  
             s.primarytitle AS show_title,
             m.media_id
         FROM original.title_basics AS t
