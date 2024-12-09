@@ -172,15 +172,15 @@ $$ LANGUAGE plpgsql;
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION simple_search
-  (query varchar(100), user_id integer)
+  (p_query varchar(100), p_user_id integer)
 RETURNS TABLE (media_id INTEGER, title TEXT)
 AS $$
 BEGIN
     -- SEARCH HISTORY
-    PERFORM * FROM "user" WHERE user_id = user_id;
+    PERFORM * FROM "user" WHERE user_id = p_user_id;
     IF FOUND THEN
         INSERT INTO search_history (user_id, type, query)
-        VALUES (user_id, 'simple_search', query);
+        VALUES (p_user_id, 'simple_search', p_query);
     END IF;
 
     -- RESULT
@@ -190,8 +190,8 @@ BEGIN
             SELECT me.media_id, me.imdb_id
             FROM media AS me
             JOIN title AS ti USING (media_id)
-            WHERE ti."name" LIKE '%' || query || '%' 
-            OR me.plot LIKE '%' || query || '%'
+            WHERE ti."name" LIKE '%' || p_query || '%' 
+            OR me.plot LIKE '%' || p_query || '%'
         )
     SELECT DISTINCT t.media_id, t."name"
     FROM search_result AS sr
