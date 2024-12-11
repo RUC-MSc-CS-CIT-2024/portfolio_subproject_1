@@ -769,8 +769,11 @@ INSERT INTO cast_member (person_id, media_id, "character", role)
 SELECT 
     p.person_id, 
     m.media_id, 
-    t.characters AS "character",
-    t.category AS role
+    unnest(regexp_split_to_array(
+        regexp_replace(trim(both '''[]''' from t.characters), ',\s*,?$', '', 'g'), 
+        ',\s*(?=(?:[^"]*"[^"]*")*[^"]*$)'
+    )) AS "character",
+    t.category AS "role"
 FROM original.title_principals t
 JOIN media m ON t.tconst = m.imdb_id
 JOIN person p ON p.imdb_id = t.nconst
