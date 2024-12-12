@@ -359,10 +359,13 @@ BEGIN
                     ELSE true
                 END
         )
-    SELECT DISTINCT t.media_id, t."name"
+    SELECT sr.media_id, t."name"
     FROM search_result AS sr
     JOIN media_primary_information USING(media_id)
-    JOIN title AS t USING(title_id);
+    JOIN title AS t USING(title_id)
+    JOIN score AS s ON sr.media_id = s.media_id
+    GROUP BY sr.media_id, t."name"
+    ORDER BY MAX(s.vote_count) DESC;
 END;
 $$
 LANGUAGE 'plpgsql';
