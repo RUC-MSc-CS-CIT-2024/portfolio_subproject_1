@@ -55,7 +55,9 @@ DROP FUNCTION IF EXISTS get_movies_with_similar_crew(INTEGER);
 DROP FUNCTION IF EXISTS get_movies_with_same_genre(INTEGER);
 DROP FUNCTION IF EXISTS person_words(VARCHAR, INT);
 DROP FUNCTION IF EXISTS exact_match_titles(TEXT[]);
+DROP FUNCTION IF EXISTS exact_match_titles(TEXT[], INTEGER);
 DROP FUNCTION IF EXISTS best_match_titles(TEXT[]);
+DROP FUNCTION IF EXISTS best_match_titles(TEXT[], INTEGER);
 DROP FUNCTION IF EXISTS word_to_words_query(TEXT[]);
 
 -- Drop all views
