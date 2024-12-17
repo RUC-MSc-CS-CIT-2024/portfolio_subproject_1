@@ -820,7 +820,7 @@ CREATE OR REPLACE FUNCTION best_match_titles(
     p_keywords TEXT[],
     p_user_id INTEGER
 )
-RETURNS TABLE (media_id INTEGER, title TEXT, match_count INTEGER) AS $$
+RETURNS TABLE (media_id INTEGER, title TEXT, relevance DECIMAL) AS $$
 BEGIN
     -- SEARCH HISTORY
     PERFORM * FROM "user" WHERE user_id = p_user_id;
@@ -831,21 +831,61 @@ BEGIN
 
     RETURN QUERY
     WITH
-        original_titles AS (
-            SELECT DISTINCT m.media_id, t."name" AS title
-            FROM media m
-            JOIN title AS t USING(media_id)
-            JOIN title_title_type USING(title_id)
-            JOIN title_type AS tt USING(title_type_id)
-            WHERE tt."name" = 'original'
+        query_result AS (
+            SELECT *
+            FROM wi
+            WHERE word = ANY(p_keywords) 
+                AND field = ANY(ARRAY['t', 'p', 'c'])
+        ),
+        media_info AS (
+            SELECT DISTINCT
+                tconst, 
+                plot, 
+                regexp_count(plot, '\w+') AS plot_term_count, 
+                regexp_count(plot, format('%s+', word), 1, 'i') AS plot_query_term_count, 
+                "name" AS title, 
+                regexp_count("name", '\w+') AS title_term_count,
+                regexp_count("name", format('%s+', word), 1, 'i') AS title_query_term_count,
+                word
+            FROM media
+            JOIN media_primary_information USING(media_id)
+            JOIN title USING(title_id)
+            JOIN query_result ON tconst = imdb_id
+        ),
+        document_info AS (
+            SELECT DISTINCT
+                tconst,
+                word,
+                (plot_query_term_count + title_query_term_count) AS document_query_term_count, 
+                (plot_term_count + title_term_count) AS document_term_count
+            FROM media_info
+        ),
+        term_frequency AS (
+            SELECT tconst, word, log(document_query_term_count::DECIMAL / document_term_count) AS tf
+            FROM document_info
+            WHERE document_query_term_count IS NOT NULL AND document_query_term_count > 0
+        ),
+        inverse_document_frequency AS (
+            SELECT word, (1::DECIMAL / COUNT(DISTINCT tconst)) AS idf
+            FROM query_result
+            GROUP BY word
+        ),
+        relevance_of_document_to_term AS (
+            SELECT tconst, word, tf * idf AS term_relevance
+            FROM term_frequency
+            JOIN inverse_document_frequency USING (word)
+        ),
+        relevance_of_document_to_query AS (
+            SELECT tconst, sum(term_relevance) AS total_relevance 
+            FROM relevance_of_document_to_term
+            GROUP BY tconst
         )
-    SELECT m.media_id, t.title, COUNT(DISTINCT wi.word)::INTEGER AS match_count
-    FROM media AS m
-    JOIN wi ON m.imdb_id = wi.tconst
-    JOIN original_titles AS t USING(media_id)
-    WHERE wi.word = ANY(p_keywords)
-    GROUP BY m.media_id, t.title
-    ORDER BY match_count DESC;
+    SELECT m.media_id, "name", total_relevance
+    FROM relevance_of_document_to_query
+    JOIN media AS m ON tconst = imdb_id
+    JOIN media_primary_information USING(media_id)
+    JOIN title USING(title_id)
+    ORDER BY total_relevance;
 END;
 $$ LANGUAGE plpgsql;
 
